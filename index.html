@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel Reventa Control</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f4f6f9;
+margin:0;
+}
+
+header{
+background:#0f172a;
+color:white;
+padding:20px;
+text-align:center;
+}
+
+.container{
+padding:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+margin-bottom:20px;
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+input,button,select{
+padding:8px;
+margin:5px;
+}
+
+button{
+background:#2563eb;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #ddd;
+text-align:center;
+}
+
+th{
+background:#e5e7eb;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+<h1>Panel Reventa Control Personal</h1>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h2>Crear Lote</h2>
+
+<input id="precioCaja" type="number" placeholder="Precio caja">
+<input id="envioCaja" type="number" placeholder="Envío">
+
+<button onclick="crearLote()">Crear lote</button>
+
+<button style="background:red" onclick="borrarTodo()">
+Borrar pruebas
+</button>
+
+</div>
+
+<div class="card">
+
+<h2>Seleccionar Lote</h2>
+
+<select id="selectorLote" onchange="mostrar()"></select>
+
+<br>
+
+<button style="background:red" onclick="eliminarLote()">
+Eliminar lote
+</button>
+
+<button style="background:orange" onclick="resetEstadisticasLote()">
+Reset estadísticas lote
+</button>
+
+<button style="background:purple" onclick="resetResumenGlobal()">
+Borrar resumen inversión y beneficio global
+</button>
+
+</div>
+
+<div class="card">
+
+<h2>Agregar Producto</h2>
+
+<input id="nombreProducto" placeholder="Nombre producto">
+<input id="precioEstimado" type="number" placeholder="Precio estimado venta">
+<input id="stockProducto" type="number" placeholder="Stock">
+
+<button onclick="agregarProducto()">Agregar</button>
+
+</div>
+
+<div class="card">
+
+<h2>Exportar</h2>
+
+<button onclick="exportarCSV()">Exportar CSV</button>
+<button onclick="exportarPDF()">Exportar PDF</button>
+
+</div>
+
+<div class="card">
+
+<h2>Resumen</h2>
+
+<p>Inversión: <span id="inversionTotal">0€</span></p>
+<p>Beneficio global: <span id="beneficioTotal">0€</span></p>
+
+</div>
+
+<div class="card">
+
+<h2>Productos</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>Producto</th>
+<th>Stock</th>
+<th>Coste</th>
+<th>Vendidos</th>
+<th>Acción</th>
+</tr>
+</thead>
+
+<tbody id="tabla"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script>
+
+/* ===== DATOS ===== */
+
+let lotes = JSON.parse(localStorage.getItem("lotes")) || [];
+let beneficioGlobal = JSON.parse(localStorage.getItem("beneficioGlobal")) || 0;
+
+/* ===== GUARDAR ===== */
+
+function guardar(){
+localStorage.setItem("lotes",JSON.stringify(lotes));
+localStorage.setItem("beneficioGlobal",JSON.stringify(beneficioGlobal));
+}
+
+/* ===== CREAR LOTE ===== */
+
+function crearLote(){
+
+let precioCaja=parseFloat(document.getElementById("precioCaja").value);
+let envio=parseFloat(document.getElementById("envioCaja").value)||0;
+
+if(!precioCaja || precioCaja<=0){
+alert("Precio inválido");
+return;
+}
+
+lotes.push({
+inversion:precioCaja+envio,
+productos:[]
+});
+
+guardar();
+actualizarSelector();
+mostrar();
+}
+
+/* ===== LOTE ACTUAL ===== */
+
+function obtenerLoteActual(){
+let index=document.getElementById("selectorLote").value;
+return lotes[index];
+}
+
+/* ===== AGREGAR PRODUCTO ===== */
+
+function agregarProducto(){
+
+let lote=obtenerLoteActual();
+if(!lote){
+alert("Selecciona un lote");
+return;
+}
+
+let nombre=document.getElementById("nombreProducto").value;
+let precioEstimado=parseFloat(document.getElementById("precioEstimado").value);
+let stock=parseInt(document.getElementById("stockProducto").value);
+
+if(!nombre || precioEstimado<=0 || stock<=0){
+alert("Datos incorrectos");
+return;
+}
+
+lote.productos.push({
+nombre,
+precioEstimado,
+stock,
+vendidos:0,
+costeReal:0,
+ingresos:0,
+fecha:Date.now()
+});
+
+recalcularCostes(lote);
+guardar();
+mostrar();
+}
+
+/* ===== COSTES ===== */
+
+function recalcularCostes(lote){
+
+let totalEstimado=0;
+
+lote.productos.forEach(p=>{
+totalEstimado+=p.precioEstimado*p.stock;
+});
+
+lote.productos.forEach(p=>{
+let peso=(p.precioEstimado*p.stock)/(totalEstimado||1);
+p.costeReal=(lote.inversion*peso)/(p.stock||1);
+});
+
+}
+
+/* ===== VENDER ===== */
+
+function vender(loteIndex,productoIndex){
+
+let lote=lotes[loteIndex];
+let producto=lote.productos[productoIndex];
+
+if(producto.stock<=0){
+alert("Sin stock");
+return;
+}
+
+let precio=parseFloat(prompt("Precio venta"));
+
+if(!precio || precio<=0) return;
+
+let beneficio=precio-producto.costeReal;
+
+beneficioGlobal+=beneficio;
+
+producto.stock--;
+producto.vendidos++;
+producto.ingresos=(producto.ingresos||0)+precio;
+
+guardar();
+mostrar();
+}
+
+/* ===== ELIMINAR ===== */
+
+function eliminarLote(){
+
+let index=document.getElementById("selectorLote").value;
+
+if(!confirm("¿Eliminar lote?")) return;
+
+lotes.splice(index,1);
+
+guardar();
+actualizarSelector();
+mostrar();
+}
+
+/* ===== RESET ESTADISTICAS LOTE ===== */
+
+function resetEstadisticasLote(){
+
+let index=document.getElementById("selectorLote").value;
+let lote=lotes[index];
+
+if(!lote) return;
+
+if(!confirm("Reset estadísticas lote?")) return;
+
+lote.productos.forEach(p=>{
+p.vendidos=0;
+p.ingresos=0;
+});
+
+guardar();
+mostrar();
+}
+
+/* ===== RESET RESUMEN GLOBAL ===== */
+
+function resetResumenGlobal(){
+
+if(!confirm("Borrar resumen inversión y beneficio global?")) return;
+
+beneficioGlobal=0;
+
+guardar();
+mostrar();
+}
+
+/* ===== BORRAR PRUEBAS ===== */
+
+function borrarTodo(){
+
+if(!confirm("Borrar todo para pruebas?")) return;
+
+localStorage.clear();
+
+lotes=[];
+beneficioGlobal=0;
+
+actualizarSelector();
+mostrar();
+}
+
+/* ===== EXPORTAR ===== */
+
+function exportarCSV(){
+
+let lote=obtenerLoteActual();
+if(!lote) return;
+
+let csv="Producto,Stock,Coste,Vendidos,Ingresos\n";
+
+lote.productos.forEach(p=>{
+csv+=`${p.nombre},${p.stock},${p.costeReal.toFixed(2)},${p.vendidos},${(p.ingresos||0).toFixed(2)}\n`;
+});
+
+let blob=new Blob([csv],{type:"text/csv"});
+let a=document.createElement("a");
+
+a.href=URL.createObjectURL(blob);
+a.download="informe.csv";
+a.click();
+}
+
+function exportarPDF(){
+
+let lote=obtenerLoteActual();
+if(!lote) return;
+
+const { jsPDF } = window.jspdf;
+let doc=new jsPDF();
+
+doc.text("Informe Reventa",10,10);
+
+let y=30;
+
+lote.productos.forEach(p=>{
+doc.text(
+p.nombre+
+" | Stock:"+p.stock+
+" | Coste:"+p.costeReal.toFixed(2)+
+" | Vendidos:"+p.vendidos,
+10,y);
+
+y+=10;
+});
+
+doc.save("informe.pdf");
+}
+
+/* ===== SELECTOR ===== */
+
+function actualizarSelector(){
+
+let selector=document.getElementById("selectorLote");
+selector.innerHTML="";
+
+lotes.forEach((_,i)=>{
+selector.innerHTML+=`<option value="${i}">Lote ${i+1}</option>`;
+});
+
+}
+
+/* ===== MOSTRAR ===== */
+
+function mostrar(){
+
+let tabla=document.getElementById("tabla");
+tabla.innerHTML="";
+
+let lote=obtenerLoteActual();
+
+if(!lote) return;
+
+lote.productos.forEach((p,i)=>{
+
+tabla.innerHTML+=`
+<tr>
+<td>${p.nombre}</td>
+<td>${p.stock}</td>
+<td>${p.costeReal.toFixed(2)}€</td>
+<td>${p.vendidos}</td>
+<td>
+<button onclick="vender(${document.getElementById('selectorLote').value},${i})">
+Vender
+</button>
+</td>
+</tr>
+`;
+
+});
+
+document.getElementById("inversionTotal").innerText=(lote?.inversion||0).toFixed(2)+"€";
+document.getElementById("beneficioTotal").innerText=beneficioGlobal.toFixed(2)+"€";
+
+}
+
+/* Inicializar */
+
+actualizarSelector();
+mostrar();
+
+</script>
+
+</body>
+</html>
