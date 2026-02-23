@@ -2,60 +2,62 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Reventa Profesional Cloud</title>
+<title>Reventa Profesional</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
 body{font-family:Arial;background:#f4f6f9;margin:0;}
-header{background:#0f172a;color:white;padding:20px;text-align:center;}
-.container{padding:20px;}
+header{background:#111827;color:white;padding:20px;text-align:center;}
+.container{padding:20px;max-width:1200px;margin:auto;}
 .card{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
 input,button,select{padding:8px;margin:5px;}
 button{background:#2563eb;color:white;border:none;border-radius:5px;cursor:pointer;}
+button.danger{background:#dc2626;}
+button.gray{background:gray;}
 table{width:100%;border-collapse:collapse;}
 th,td{padding:10px;border-bottom:1px solid #ddd;text-align:center;}
 th{background:#e5e7eb;}
+h3{margin-top:0;}
 </style>
 </head>
 
 <body>
 
 <header>
-<h1>Reventa Profesional Cloud</h1>
+<h1>Sistema Profesional de Reventa</h1>
 </header>
 
 <div class="container">
 
 <div class="card">
-<h2>Crear Lote</h2>
+<h3>Crear Lote</h3>
 <input id="precioCaja" type="number" placeholder="Precio caja">
 <input id="envioCaja" type="number" placeholder="Envío">
-<button onclick="crearLote()">Crear lote</button>
+<button onclick="crearLote()">Crear</button>
 </div>
 
 <div class="card">
-<h2>Seleccionar Lote</h2>
-<select id="selectorLote" onchange="mostrarProductos()"></select>
+<h3>Seleccionar Lote</h3>
+<select id="selectorLote" onchange="mostrar()"></select>
+<button class="danger" onclick="eliminarLote()">Eliminar Lote</button>
 </div>
 
 <div class="card">
-<h2>Agregar Producto</h2>
-<input id="nombreProducto" placeholder="Nombre producto">
+<h3>Agregar Producto</h3>
+<input id="nombreProducto" placeholder="Nombre">
 <input id="precioEstimado" type="number" placeholder="Precio estimado venta">
 <input id="stockProducto" type="number" placeholder="Stock">
 <button onclick="agregarProducto()">Agregar</button>
 </div>
 
 <div class="card">
-<h2>Productos</h2>
+<h3>Productos</h3>
 <table>
 <thead>
 <tr>
-<th>Producto</th>
+<th>Nombre</th>
 <th>Stock</th>
 <th>Coste</th>
 <th>Vendidos</th>
@@ -66,119 +68,254 @@ th{background:#e5e7eb;}
 </table>
 </div>
 
+<div class="card">
+<h3>Resumen Lote</h3>
+<p id="resumenLote"></p>
+<button class="gray" onclick="resetLote()">Reset estadísticas lote</button>
 </div>
 
-<script type="module">
+<div class="card">
+<h3>Resumen Global</h3>
+<p id="resumenGlobal"></p>
+<button class="gray" onclick="resetGlobal()">Reset resumen global</button>
+<button onclick="exportarCSV()">Exportar CSV</button>
+<button onclick="exportarPDF()">Exportar PDF</button>
+</div>
 
-// 🔴 PEGA AQUÍ TU firebaseConfig
-const firebaseConfig = {
-  apiKey: "PEGA_AQUI",
-  authDomain: "PEGA_AQUI",
-  projectId: "PEGA_AQUI",
-  storageBucket: "PEGA_AQUI",
-  messagingSenderId: "PEGA_AQUI",
-  appId: "PEGA_AQUI"
-};
+</div>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<script>
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+let lotes = JSON.parse(localStorage.getItem("lotes")) || [];
 
-let loteActual = null;
+function guardar(){
+localStorage.setItem("lotes",JSON.stringify(lotes));
+}
 
-// Crear lote
-async function crearLote(){
+function crearLote(){
 
-let precio=parseFloat(document.getElementById("precioCaja").value);
+let precio=parseFloat(document.getElementById("precioCaja").value)||0;
 let envio=parseFloat(document.getElementById("envioCaja").value)||0;
 
-await addDoc(collection(db,"lotes"),{
-inversion:precio+envio
+lotes.push({
+inversion:precio+envio,
+productos:[],
+ventas:0
 });
 
-cargarLotes();
+guardar();
+actualizarSelector();
 }
 
-// Cargar lotes
-async function cargarLotes(){
-
-let snap=await getDocs(collection(db,"lotes"));
-let selector=document.getElementById("selectorLote");
-selector.innerHTML="";
-
-snap.forEach(docu=>{
-selector.innerHTML+=`<option value="${docu.id}">${docu.id}</option>`;
-});
-
+function eliminarLote(){
+let i=document.getElementById("selectorLote").value;
+if(!confirm("Eliminar lote completo?")) return;
+lotes.splice(i,1);
+guardar();
+actualizarSelector();
+mostrar();
 }
 
-async function agregarProducto(){
+function agregarProducto(){
+
+let i=document.getElementById("selectorLote").value;
+if(i==="") return;
 
 let nombre=document.getElementById("nombreProducto").value;
-let precioEstimado=parseFloat(document.getElementById("precioEstimado").value);
-let stock=parseInt(document.getElementById("stockProducto").value);
+let precioEstimado=parseFloat(document.getElementById("precioEstimado").value)||0;
+let stock=parseInt(document.getElementById("stockProducto").value)||1;
 
-await addDoc(collection(db,"lotes",loteActual,"productos"),{
+lotes[i].productos.push({
 nombre,
 precioEstimado,
 stock,
-vendidos:0
+vendidos:0,
+ingresos:0
 });
 
-mostrarProductos();
+recalcularCostes(lotes[i]);
+guardar();
+mostrar();
 }
 
-async function mostrarProductos(){
+function recalcularCostes(lote){
 
-loteActual=document.getElementById("selectorLote").value;
+let totalEstimado=0;
+lote.productos.forEach(p=>{
+totalEstimado+=p.precioEstimado*p.stock;
+});
 
-let snap=await getDocs(collection(db,"lotes",loteActual,"productos"));
+lote.productos.forEach(p=>{
+let proporcion=(p.precioEstimado*p.stock)/totalEstimado;
+p.costeUnitario=(lote.inversion*proporcion)/p.stock;
+});
+}
+
+function mostrar(){
+
+let i=document.getElementById("selectorLote").value;
 let tabla=document.getElementById("tabla");
 tabla.innerHTML="";
+if(i==="") return;
 
-snap.forEach(docu=>{
-let p=docu.data();
+let lote=lotes[i];
+
+lote.productos.forEach((p,index)=>{
+
 tabla.innerHTML+=`
 <tr>
 <td>${p.nombre}</td>
 <td>${p.stock}</td>
-<td>${p.precioEstimado}</td>
+<td>${p.costeUnitario.toFixed(2)}</td>
 <td>${p.vendidos}</td>
 <td>
-<button onclick="vender('${docu.id}')">Vender</button>
-<button onclick="eliminarSinVenta('${docu.id}')">Eliminar</button>
+<button onclick="vender(${i},${index})">Vender</button>
+<button class="gray" onclick="eliminarSinVenta(${i},${index})">Eliminar</button>
 </td>
 </tr>
 `;
+
 });
 
+actualizarResumen(i);
 }
 
-window.vender=async function(id){
+function vender(i,j){
 
 let precio=parseFloat(prompt("Precio venta"));
+if(!precio) return;
 
-let ref=doc(db,"lotes",loteActual,"productos",id);
-let snap=await getDocs(collection(db,"lotes",loteActual,"productos"));
+let p=lotes[i].productos[j];
 
-await updateDoc(ref,{
-vendidos:1
-});
-
-mostrarProductos();
+if(p.stock<=0){
+alert("Sin stock");
+return;
 }
 
-window.eliminarSinVenta=async function(id){
+p.stock--;
+p.vendidos++;
+p.ingresos+=precio;
+
+guardar();
+mostrar();
+}
+
+function eliminarSinVenta(i,j){
 
 if(!confirm("Eliminar producto sin vender?")) return;
 
-await deleteDoc(doc(db,"lotes",loteActual,"productos",id));
-mostrarProductos();
+lotes[i].productos.splice(j,1);
+recalcularCostes(lotes[i]);
+guardar();
+mostrar();
 }
 
-cargarLotes();
+function actualizarResumen(i){
+
+let lote=lotes[i];
+
+let ingresos=0;
+let beneficio=0;
+
+lote.productos.forEach(p=>{
+ingresos+=p.ingresos;
+beneficio+=p.ingresos-(p.vendidos*p.costeUnitario);
+});
+
+document.getElementById("resumenLote").innerHTML=
+"Inversión: "+lote.inversion+" € | Ingresos: "+ingresos.toFixed(2)+" € | Beneficio: "+beneficio.toFixed(2)+" €";
+
+actualizarGlobal();
+}
+
+function actualizarGlobal(){
+
+let totalInv=0;
+let totalIng=0;
+let totalBen=0;
+
+lotes.forEach(lote=>{
+totalInv+=lote.inversion;
+lote.productos.forEach(p=>{
+totalIng+=p.ingresos;
+totalBen+=p.ingresos-(p.vendidos*p.costeUnitario||0);
+});
+});
+
+document.getElementById("resumenGlobal").innerHTML=
+"Inversión Total: "+totalInv+" € | Ingresos Totales: "+totalIng.toFixed(2)+" € | Beneficio Global: "+totalBen.toFixed(2)+" €";
+}
+
+function resetLote(){
+let i=document.getElementById("selectorLote").value;
+lotes[i].productos.forEach(p=>{
+p.vendidos=0;
+p.ingresos=0;
+});
+guardar();
+mostrar();
+}
+
+function resetGlobal(){
+if(!confirm("Borrar TODAS las estadísticas?")) return;
+lotes.forEach(lote=>{
+lote.productos.forEach(p=>{
+p.vendidos=0;
+p.ingresos=0;
+});
+});
+guardar();
+mostrar();
+}
+
+function exportarCSV(){
+
+let csv="Lote,Producto,Vendidos,Ingresos\n";
+
+lotes.forEach((lote,i)=>{
+lote.productos.forEach(p=>{
+csv+=`${i},${p.nombre},${p.vendidos},${p.ingresos}\n`;
+});
+});
+
+let blob=new Blob([csv],{type:"text/csv"});
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="reporte.csv";
+a.click();
+}
+
+function exportarPDF(){
+
+const {jsPDF}=window.jspdf;
+let doc=new jsPDF();
+
+let y=10;
+
+lotes.forEach((lote,i)=>{
+doc.text("Lote "+i,10,y);
+y+=8;
+lote.productos.forEach(p=>{
+doc.text(`${p.nombre} | Vendidos: ${p.vendidos} | Ingresos: ${p.ingresos}`,10,y);
+y+=8;
+});
+y+=10;
+});
+
+doc.save("reporte.pdf");
+}
+
+function actualizarSelector(){
+
+let s=document.getElementById("selectorLote");
+s.innerHTML="";
+lotes.forEach((lote,i)=>{
+s.innerHTML+=`<option value="${i}">Lote ${i}</option>`;
+});
+}
+
+actualizarSelector();
+mostrar();
 
 </script>
 
