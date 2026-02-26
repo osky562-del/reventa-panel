@@ -215,15 +215,17 @@ function actualizarResumen(i){
 let lote=lotes[i];
 
 let ingresos=0;
-let beneficio=0;
 
 lote.productos.forEach(p=>{
 ingresos+=p.ingresos;
-beneficio+=p.ingresos-(p.vendidos*p.costeUnitario);
 });
 
-document.getElementById("resumenLote").innerHTML=
-"Inversión: "+lote.inversion+" € | Ingresos: "+ingresos.toFixed(2)+" € | Beneficio: "+beneficio.toFixed(2)+" €";
+let beneficio = ingresos - lote.inversion;
+
+document.getElementById("resumenLote").innerHTML =
+"Inversión: "+lote.inversion.toFixed(2)+" € | " +
+"Ingresos: "+ingresos.toFixed(2)+" € | " +
+"Beneficio REAL: "+beneficio.toFixed(2)+" €";
 
 actualizarGlobal();
 }
@@ -232,18 +234,20 @@ function actualizarGlobal(){
 
 let totalInv=0;
 let totalIng=0;
-let totalBen=0;
 
 lotes.forEach(lote=>{
 totalInv+=lote.inversion;
 lote.productos.forEach(p=>{
 totalIng+=p.ingresos;
-totalBen+=p.ingresos-(p.vendidos*p.costeUnitario||0);
 });
 });
 
-document.getElementById("resumenGlobal").innerHTML=
-"Inversión Total: "+totalInv+" € | Ingresos Totales: "+totalIng.toFixed(2)+" € | Beneficio Global: "+totalBen.toFixed(2)+" €";
+let totalBen = totalIng - totalInv;
+
+document.getElementById("resumenGlobal").innerHTML =
+"Inversión Total: "+totalInv.toFixed(2)+" € | " +
+"Ingresos Totales: "+totalIng.toFixed(2)+" € | " +
+"Beneficio Global REAL: "+totalBen.toFixed(2)+" €";
 }
 
 function resetLote(){
