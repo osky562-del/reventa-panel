@@ -1,0 +1,26 @@
+/* ... (Se mantiene lo anterior y añadimos esto) ... */
+#buscador {
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    width: 250px;
+    font-size: 14px;
+}
+
+#filtro-mes {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #2563eb;
+    background: white;
+    font-weight: bold;
+    color: #2563eb;
+}
+
+.header-tabla {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
