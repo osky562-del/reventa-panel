@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRIXO | Cloud Control</title>
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --dark: #1e293b; --bg: #f1f5f9; --max-width: 1100px; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; color: #334155; }
+        .container { width: 95%; max-width: var(--max-width); box-sizing: border-box; }
+        
+        #loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; width: 100%; }
+        #app-content { display: none; width: 100%; }
+
+        header { background: var(--dark); color: white; width: 100%; padding: 40px 0; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; justify-content: center; }
+        .resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .stat { background: rgba(255,255,255,0.08); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .stat span { font-size: 0.8rem; text-transform: uppercase; opacity: 0.7; letter-spacing: 1px; }
+        .stat b { display: block; font-size: 1.8rem; margin-top: 10px; }
+
+        .grid-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); box-sizing: border-box; }
+        h2 { margin: 0 0 20px 0; font-size: 1.2rem; border-bottom: 2px solid var(--bg); padding-bottom: 12px; color: var(--dark); }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        input, select, button { padding: 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; width: 100%; box-sizing: border-box; outline: none; }
+        button { cursor: pointer; font-weight: bold; border: none; transition: 0.2s; }
+        .btn-compra { background: var(--dark); color: white; grid-column: span 2; }
+        .btn-venta { background: var(--success); color: white; grid-column: span 2; }
+
+        .table-card { padding: 0 !important; overflow: hidden; margin-bottom: 50px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { background: #f8fafc; color: #64748b; padding: 20px; text-align: left; font-size: 0.8rem; text-transform: uppercase; }
+        td { padding: 20px; border-top: 1px solid #f1f5f9; }
+        .row-lote { background: #fffcf5; font-weight: bold; }
+        .negativo { color: var(--danger); }
+        .positivo { color: var(--success); }
+        .btn-del { color: var(--danger); background: none; font-size: 1.2rem; width: auto; cursor: pointer; }
+
+        @media (max-width: 850px) { .grid-forms, .resumen { grid-template-columns: 1fr; } .stat b { font-size: 1.5rem; } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <h1 style="font-size: 3rem; margin: 0;">VRIXO</h1>
+        <p id="status-msg">Cargando base de datos...</p>
+    </div>
+
+    <div id="app-content">
+        <header>
+            <div class="container">
+                <h1 style="margin:0 0 25px 0; font-size: 2rem;">🚀 Vrixo Cloud Panel</h1>
+                <div class="resumen">
+                    <div class="stat"><span>Inversión</span><b id="t-gastos">0.00€</b></div>
+                    <div class="stat"><span>Ventas</span><b id="t-ventas">0.00€</b></div>
+                    <div class="stat"><span>Neto</span><b id="t-neto">0.00€</b></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="grid-forms">
+                <section class="card">
+                    <h2>📦 Registrar Compra</h2>
+                    <div class="form-row">
+                        <input type="text" id="g-nom" placeholder="Nombre del Lote o Producto" style="grid-column: span 2;">
+                        <input type="number" id="g-pre" placeholder="Precio Compra €">
+                        <input type="number" id="g-env" placeholder="Envío Pagado €">
+                        <button onclick="registrarCompra()" class="btn-compra">Guardar en Nube</button>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>💰 Registrar Venta</h2>
+                    <div class="form-row">
+                        <input type="text" id="v-nom" placeholder="¿Qué has vendido?" style="grid-column: span 2;">
+                        <input type="number" id="v-pre" placeholder="Precio Venta €">
+                        <select id="v-vin"><option value="suelto">Venta Suelta</option></select>
+                        <button onclick="registrarVenta()" class="btn-venta">Guardar Venta</button>
+                    </div>
+                </section>
+            </div>
+
+            <section class="card table-card">
+                <div style="padding:25px; font-weight:bold; border-bottom:1px solid #f1f5f9;">Historial Sincronizado</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Fecha</th><th>Concepto</th><th>Inversión</th><th>Ingreso</th><th>Margen Lote</th><th></th></tr>
+                        </thead>
+                        <tbody id="tabla-cuerpo"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBphY_jaOOOVOzwzfoXE78_iDVOQYRhA2o",
+            authDomain: "control-de-gastos-39154.firebaseapp.com",
+            projectId: "control-de-gastos-39154",
+            storageBucket: "control-de-gastos-39154.firebasestorage.app",
+            messagingSenderId: "845236944662",
+            appId: "1:845236944662:web:897201644eaf708afd5a37"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userUID = null;
+        let compras = [];
+        let ventas = [];
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userUID = user.uid;
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                
+                // Escuchar datos en tiempo real
+                onSnapshot(query(collection(db, "compras"), where("uid", "==", userUID)), (snap) => {
+                    compras = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    actualizarInterfaz();
+                });
+                onSnapshot(query(collection(db, "ventas"), where("uid", "==", userUID)), (snap) => {
+                    ventas = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    actualizarInterfaz();
+                });
+            } else {
+                await signInAnonymously(auth);
+            }
+        });
+
+        window.registrarCompra = async () => {
+            const nom = document.getElementById('g-nom').value;
+            const pre = parseFloat(document.getElementById('g-pre').value) || 0;
+            const env = parseFloat(document.getElementById('g-env').value) || 0;
+            if(!nom || (pre+env) <= 0) return;
+            await addDoc(collection(db, "compras"), { uid: userUID, nom, total: pre + env, fecha: new Date().toLocaleDateString() });
+            document.getElementById('g-nom').value = ""; document.getElementById('g-pre').value = ""; document.getElementById('g-env').value = "";
+        };
+
+        window.registrarVenta = async () => {
+            const nom = document.getElementById('v-nom').value;
+            const pre = parseFloat(document.getElementById('v-pre').value) || 0;
+            const vin = document.getElementById('v-vin').value;
+            if(!nom || pre <= 0) return;
+            await addDoc(collection(db, "ventas"), { uid: userUID, nom, pre, vin, fecha: new Date().toLocaleDateString() });
+            document.getElementById('v-nom').value = ""; document.getElementById('v-pre').value = "";
+        };
+
+        window.borrarRegistro = async (tipo, id) => {
+            if(confirm("¿Eliminar definitivamente?")) {
+                await deleteDoc(doc(db, tipo === 'c' ? "compras" : "ventas", id));
+            }
+        };
+
+        function actualizarInterfaz() {
+            const cuerpo = document.getElementById('tabla-cuerpo');
+            const select = document.getElementById('v-vin');
+            cuerpo.innerHTML = "";
+            select.innerHTML = '<option value="suelto">Venta Suelta</option>';
+            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
+
+            let totalG = 0, totalV = 0;
+            compras.forEach(c => {
+                totalG += c.total;
+                const rec = ventas.filter(v => v.vin === c.id).reduce((s, x) => s + x.pre, 0);
+                const margen = rec - c.total;
+                cuerpo.innerHTML += `<tr class="row-lote"><td>${c.fecha}</td><td>📦 ${c.nom}</td><td class="negativo">-${c.total.toFixed(2)}€</td><td>Recup: ${rec.toFixed(2)}€</td><td class="${margen>=0?'positivo':'negativo'}">${margen.toFixed(2)}€</td><td style="text-align:right"><span onclick="borrarRegistro('c','${c.id}')" class="btn-del">✕</span></td></tr>`;
+            });
+            ventas.forEach(v => {
+                totalV += v.pre;
+                cuerpo.innerHTML += `<tr><td>${v.fecha}</td><td>💰 ${v.nom} ${v.vin==='suelto'?'(Suelto)':'(Lote)'}</td><td>---</td><td class="positivo">+${v.pre.toFixed(2)}€</td><td>---</td><td style="text-align:right"><span onclick="borrarRegistro('v','${v.id}')" class="btn-del">✕</span></td></tr>`;
+            });
+            document.getElementById('t-gastos').innerText = totalG.toFixed(2) + "€";
+            document.getElementById('t-ventas').innerText = totalV.toFixed(2) + "€";
+            const neto = totalV - totalG;
+            document.getElementById('t-neto').innerText = neto.toFixed(2) + "€";
+            document.getElementById('t-neto').style.color = neto >= 0 ? "var(--success)" : "var(--danger)";
+        }
+    </script>
+</body>
+</html>
