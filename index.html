@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrixo Business - Control Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1>Vrixo Business</h1>
+        <div class="balance-container">
+            <div class="stat"><span>Gastos:</span> <b id="total-gastos">0€</b></div>
+            <div class="stat"><span>Ingresos:</span> <b id="total-ingresos">0€</b></div>
+            <div class="stat highlight"><span>Beneficio:</span> <b id="beneficio-total">0€</b></div>
+        </div>
+    </header>
+
+    <main>
+        <section class="card chart-container">
+            <div class="header-tabla">
+                <h2>📈 Rendimiento Mensual</h2>
+                <select id="filtro-mes" onchange="actualizarInterfaz()">
+                    <option value="todos">Ver todo el año</option>
+                    <option value="0">Enero</option><option value="1">Febrero</option>
+                    <option value="2">Marzo</option><option value="3">Abril</option>
+                    <option value="4">Mayo</option><option value="5">Junio</option>
+                    <option value="6">Julio</option><option value="7">Agosto</option>
+                    <option value="8">Septiembre</option><option value="9">Octubre</option>
+                    <option value="10">Noviembre</option><option value="11">Diciembre</option>
+                </select>
+            </div>
+            <canvas id="miGrafica"></canvas>
+        </section>
+
+        <section class="card">
+            <h2>📝 Registrar Movimiento</h2>
+            <div class="form-grid">
+                <input type="date" id="fecha">
+                <input type="text" id="concepto" placeholder="Ej: Lote1: Zapatos">
+                <input type="number" id="importe" step="0.01" placeholder="Importe €">
+                <select id="plataforma">
+                    <option value="Wallapop">Wallapop</option>
+                    <option value="Vinted">Vinted</option>
+                    <option value="Amazon">Amazon</option>
+                    <option value="Mano">Mano/Otros</option>
+                </select>
+                <select id="tipo">
+                    <option value="gasto">Gasto (Compra/Envío)</option>
+                    <option value="ingreso">Ingreso (Venta)</option>
+                </select>
+                <button onclick="agregarMovimiento()" class="btn-add">Añadir</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="header-tabla">
+                <h2>Historial</h2>
+                <input type="text" id="buscador" onkeyup="actualizarInterfaz()" placeholder="🔍 Buscar producto o lote...">
+                <button onclick="exportarExcel()" class="btn-excel">📥 Excel</button>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Concepto</th><th>Plataforma</th><th>Importe</th><th>Tipo</th><th>Acción</th></tr>
+                    </thead>
+                    <tbody id="tabla-cuerpo"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
