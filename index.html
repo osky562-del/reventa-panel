@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Oportunidades Vrixo</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
+</head>
+
+<body>
+
+<header>
+
+<h1>🚀 Oportunidades Vrixo</h1>
+<p>Panel de negocio</p>
+
+</header>
+
+<main>
+
+<section class="card">
+
+<h2>Añadir venta</h2>
+
+<input id="producto" placeholder="Producto">
+
+<input id="coste" type="number" placeholder="Coste">
+
+<input id="venta" type="number" placeholder="Precio venta">
+
+<input id="envio" type="number" placeholder="Envío">
+
+<button onclick="guardarVenta()">Guardar venta</button>
+
+</section>
+
+<section class="card">
+
+<h2>Beneficio total</h2>
+
+<h1 id="beneficio">0€</h1>
+
+</section>
+
+<section class="card">
+
+<h2>Historial</h2>
+
+<table>
+
+<thead>
+
+<tr>
+<th>Producto</th>
+<th>Coste</th>
+<th>Venta</th>
+<th>Beneficio</th>
+</tr>
+
+</thead>
+
+<tbody id="tabla"></tbody>
+
+</table>
+
+</section>
+
+</main>
+
+<script src="app.js"></script>
+
+</body>
+
+</html>
