@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrixo Business | Cloud Edition</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // CONFIGURACIÓN DE TU PROYECTO (Pega aquí lo que copiaste de Firebase)
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_PROYECTO.firebaseapp.com",
+            projectId: "TU_PROYECTO",
+            storageBucket: "TU_PROYECTO.appspot.com",
+            messagingSenderId: "TU_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // VARIABLES GLOBALES
+        let usuarioActual = null;
+        let compras = [];
+        let ventas = [];
+
+        // --- GESTIÓN DE USUARIO ---
+        window.login = async () => {
+            const email = prompt("Email:");
+            const pass = prompt("Contraseña:");
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch (e) { alert("Error: " + e.message); }
+        };
+
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                usuarioActual = user.uid;
+                document.getElementById('app-content').style.display = 'block';
+                document.getElementById('login-screen').style.display = 'none';
+                escucharDatos();
+            } else {
+                document.getElementById('app-content').style.display = 'none';
+                document.getElementById('login-screen').style.display = 'block';
+            }
+        });
+
+        // --- OPERACIONES DE BASE DE DATOS ---
+        function escucharDatos() {
+            // Escuchar Compras
+            const qC = query(collection(db, "compras"), where("userId", "==", usuarioActual));
+            onSnapshot(qC, (snapshot) => {
+                compras = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                render();
+            });
+
+            // Escuchar Ventas
+            const qV = query(collection(db, "ventas"), where("userId", "==", usuarioActual));
+            onSnapshot(qV, (snapshot) => {
+                ventas = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                render();
+            });
+        }
+
+        window.regCompra = async () => {
+            const nom = document.getElementById('g-nom').value;
+            const pre = parseFloat(document.getElementById('g-pre').value) || 0;
+            const env = parseFloat(document.getElementById('g-env').value) || 0;
+            if(!nom || (pre+env) <= 0) return;
+
+            await addDoc(collection(db, "compras"), {
+                userId: usuarioActual,
+                nom,
+                total: pre + env,
+                fecha: new Date().toLocaleDateString()
+            });
+            document.getElementById('g-nom').value = ""; document.getElementById('g-pre').value = ""; document.getElementById('g-env').value = "";
+        };
+
+        window.regVenta = async () => {
+            const nom = document.getElementById('v-nom').value;
+            const pre = parseFloat(document.getElementById('v-pre').value) || 0;
+            const vin = document.getElementById('v-vin').value;
+            if(!nom || pre <= 0) return;
+
+            await addDoc(collection(db, "ventas"), {
+                userId: usuarioActual,
+                nom,
+                pre,
+                vin,
+                fecha: new Date().toLocaleDateString()
+            });
+            document.getElementById('v-nom').value = ""; document.getElementById('v-pre').value = "";
+        };
+
+        window.borrar = async (tipo, id) => {
+            if(confirm("¿Eliminar?")) {
+                await deleteDoc(doc(db, tipo === 'c' ? "compras" : "ventas", id));
+            }
+        };
+
+        // --- RENDERIZADO (IGUAL AL ANTERIOR) ---
+        function render() {
+            const tbody = document.getElementById('cuerpo');
+            const select = document.getElementById('v-vin');
+            tbody.innerHTML = "";
+            select.innerHTML = '<option value="suelto">Venta Suelta</option>';
+            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
+
+            let sumG = 0, sumV = 0;
+            compras.forEach(c => {
+                sumG += c.total;
+                const rec = ventas.filter(v => v.vin === c.id).reduce((s, x) => s + x.pre, 0);
+                const margen = rec - c.total;
+                tbody.innerHTML += `<tr class="row-lote"><td>${c.fecha}</td><td>📦 ${c.nom}</td><td style="color:red">-${c.total.toFixed(2)}€</td><td>Recup: ${rec.toFixed(2)}€</td><td style="color:${margen>=0?'green':'red'}">${margen.toFixed(2)}€</td><td><button onclick="borrar('c','${c.id}')">✕</button></td></tr>`;
+            });
+
+            ventas.forEach(v => {
+                sumV += v.pre;
+                tbody.innerHTML += `<tr><td>${v.fecha}</td><td>💰 ${v.nom}</td><td>---</td><td style="color:green">+${v.pre.toFixed(2)}€</td><td>---</td><td><button onclick="borrar('v','${v.id}')">✕</button></td></tr>`;
+            });
+
+            document.getElementById('t-gastos').innerText = sumG.toFixed(2) + "€";
+            document.getElementById('t-ventas').innerText = sumV.toFixed(2) + "€";
+            document.getElementById('t-neto').innerText = (sumV - sumG).toFixed(2) + "€";
+        }
+    </script>
+    <style>
+        /* Reutilizamos el CSS anterior añadiendo esto: */
+        #login-screen { text-align: center; padding: 100px; }
+        .btn-auth { background: #2563eb; color: white; padding: 15px 30px; border-radius: 8px; font-size: 1.2rem; cursor: pointer; border:none; }
+        /* ... Pegar aquí el resto de tu CSS anterior ... */
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1>Vrixo Business Cloud</h1>
+        <p>Identifícate para gestionar tus lotes</p>
+        <button class="btn-auth" onclick="login()">Entrar en mi cuenta</button>
+    </div>
+
+    <div id="app-content" style="display:none">
+        <header>
+            <div class="wrapper">
+                <div style="display:flex; justify-content:space-between">
+                    <h1>🚀 Vrixo Business</h1>
+                    <button onclick="logout()" style="width:auto; height:30px; background:red; color:white">Cerrar Sesión</button>
+                </div>
+                <div class="resumen">
+                    <div class="stat"><span>Inversión</span><b id="t-gastos">0€</b></div>
+                    <div class="stat"><span>Ventas</span><b id="t-ventas">0€</b></div>
+                    <div class="stat"><span>Neto</span><b id="t-neto">0€</b></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="wrapper">
+            <div class="grid-forms">
+                <section class="card">
+                    <h2>📦 Compras</h2>
+                    <input type="text" id="g-nom" placeholder="Nombre Lote">
+                    <input type="number" id="g-pre" placeholder="Precio €">
+                    <input type="number" id="g-env" placeholder="Envío €">
+                    <button onclick="regCompra()" class="btn-compra">Guardar</button>
+                </section>
+                <section class="card">
+                    <h2>💰 Ventas</h2>
+                    <input type="text" id="v-nom" placeholder="Producto">
+                    <input type="number" id="v-pre" placeholder="Precio €">
+                    <select id="v-vin"></select>
+                    <button onclick="regVenta()" class="btn-venta">Vender</button>
+                </section>
+            </div>
+            <section class="card" style="padding:0">
+                <table>
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Inversión</th><th>Ingreso</th><th>Margen</th><th></th></tr></thead>
+                    <tbody id="cuerpo"></tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+</body>
+</html>
