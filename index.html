@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrixo - Gestión Fiscal</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1>Vrixo Business Control</h1>
+        <div class="balance-container">
+            <div class="stat"><span>Ingresos:</span> <b id="total-ingresos">0€</b></div>
+            <div class="stat"><span>Gastos:</span> <b id="total-gastos">0€</b></div>
+            <div class="stat"><span>Beneficio Neto:</span> <u id="beneficio-total">0€</u></div>
+        </div>
+    </header>
+
+    <main>
+        <div class="grid-inputs">
+            <section class="card">
+                <h2>➕ Registro de Compra / Gasto</h2>
+                <p><small>Lotes, envíos de compra, material de embalaje...</small></p>
+                <input type="date" id="g-fecha">
+                <input type="text" id="g-concepto" placeholder="Concepto (Ej: Lote 50 camisas)">
+                <input type="text" id="g-factura" placeholder="Nº Factura / Ticket">
+                <input type="number" id="g-base" placeholder="Base Imponible (€)">
+                <select id="g-iva">
+                    <option value="21">IVA 21%</option>
+                    <option value="10">IVA 10%</option>
+                    <option value="4">IVA 4%</option>
+                    <option value="0">Exento/0%</option>
+                </select>
+                <button onclick="registrarMovimiento('gasto')" class="btn-gasto">Registrar Gasto</button>
+            </section>
+
+            <section class="card">
+                <h2>💰 Registro de Venta</h2>
+                <p><small>Ventas individuales o por lotes</small></p>
+                <input type="date" id="v-fecha">
+                <input type="text" id="v-producto" placeholder="Producto vendido">
+                <input type="text" id="v-cliente" placeholder="Nombre cliente (opcional)">
+                <input type="number" id="v-total" placeholder="Precio Total Venta (€)">
+                <button onclick="registrarMovimiento('venta')" class="btn-venta">Registrar Venta</button>
+            </section>
+        </div>
+
+        <section class="card">
+            <h2>Historial Contable (Libro de Registro)</h2>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Tipo</th>
+                            <th>Base</th>
+                            <th>IVA</th>
+                            <th>Total</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-tabla"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
