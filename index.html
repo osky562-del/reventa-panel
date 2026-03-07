@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRIXO | Sincronizado</title>
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --dark: #1e293b; --bg: #f1f5f9; --max-width: 1100px; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; color: #334155; }
+        .container { width: 95%; max-width: var(--max-width); box-sizing: border-box; }
+        
+        /* Pantalla de Login */
+        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 320px; }
+        
+        #app-content { display: none; width: 100%; }
+
+        header { background: var(--dark); color: white; width: 100%; padding: 40px 0; margin-bottom: 30px; display: flex; justify-content: center; }
+        .resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .stat { background: rgba(255,255,255,0.08); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .stat b { display: block; font-size: 1.5rem; margin-top: 10px; }
+
+        .grid-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        input, select, button { padding: 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        button { cursor: pointer; font-weight: bold; border: none; background: var(--primary); color: white; }
+        .btn-compra { background: var(--dark); }
+        .btn-venta { background: var(--success); }
+
+        table { width: 100%; border-collapse: collapse; min-width: 600px; background: white; border-radius: 15px; overflow: hidden; }
+        th { background: #f8fafc; padding: 15px; text-align: left; }
+        td { padding: 15px; border-top: 1px solid #f1f5f9; }
+        
+        @media (max-width: 850px) { .grid-forms, .resumen { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <h1 style="margin:0 0 10px 0">VRIXO</h1>
+            <p>Introduce tus datos para sincronizar</p>
+            <input type="email" id="email" placeholder="Correo electrónico">
+            <input type="password" id="pass" placeholder="Contraseña">
+            <button onclick="entrar()">Entrar al Panel</button>
+        </div>
+    </div>
+
+    <div id="app-content">
+        <header>
+            <div class="container">
+                <div style="display:flex; justify-content:space-between">
+                    <h1>🚀 Vrixo Cloud</h1>
+                    <button onclick="salir()" style="width:auto; background:none; text-decoration:underline">Cerrar Sesión</button>
+                </div>
+                <div class="resumen">
+                    <div class="stat"><span>Inversión</span><b id="t-gastos">0.00€</b></div>
+                    <div class="stat"><span>Ventas</span><b id="t-ventas">0.00€</b></div>
+                    <div class="stat"><span>Neto</span><b id="t-neto">0.00€</b></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="grid-forms">
+                <section class="card">
+                    <h2>📦 Compras</h2>
+                    <input type="text" id="g-nom" placeholder="Producto/Lote">
+                    <input type="number" id="g-pre" placeholder="Precio Compra">
+                    <input type="number" id="g-env" placeholder="Envío">
+                    <button onclick="registrarCompra()" class="btn-compra">Guardar</button>
+                </section>
+                <section class="card">
+                    <h2>💰 Ventas</h2>
+                    <input type="text" id="v-nom" placeholder="Vendido">
+                    <input type="number" id="v-pre" placeholder="Precio Venta">
+                    <select id="v-vin"><option value="suelto">Venta Suelta</option></select>
+                    <button onclick="registrarVenta()" class="btn-venta">Vender</button>
+                </section>
+            </div>
+            <div style="overflow-x:auto">
+                <table id="tabla">
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Inversión</th><th>Ingreso</th><th>Margen</th><th></th></tr></thead>
+                    <tbody id="tabla-cuerpo"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBphY_jaOOOVOzwzfoXE78_iDVOQYRhA2o",
+            authDomain: "control-de-gastos-39154.firebaseapp.com",
+            projectId: "control-de-gastos-39154",
+            storageBucket: "control-de-gastos-39154.firebasestorage.app",
+            messagingSenderId: "845236944662",
+            appId: "1:845236944662:web:897201644eaf708afd5a37"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let userUID = null;
+
+        // FUNCIONES DE ACCESO
+        window.entrar = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Datos incorrectos"));
+        };
+
+        window.salir = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userUID = user.uid;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                iniciarSincro();
+            } else {
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('app-content').style.display = 'none';
+            }
+        });
+
+        // DATOS Y RENDER (Sincronizados)
+        function iniciarSincro() {
+            onSnapshot(query(collection(db, "compras"), where("uid", "==", userUID)), (snap) => {
+                const compras = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                onSnapshot(query(collection(db, "ventas"), where("uid", "==", userUID)), (snapV) => {
+                    const ventas = snapV.docs.map(d => ({id: d.id, ...d.data()}));
+                    render(compras, ventas);
+                });
+            });
+        }
+
+        window.registrarCompra = async () => {
+            const nom = document.getElementById('g-nom').value;
+            const pre = parseFloat(document.getElementById('g-pre').value) || 0;
+            const env = parseFloat(document.getElementById('g-env').value) || 0;
+            if(!nom) return;
+            await addDoc(collection(db, "compras"), { uid: userUID, nom, total: pre + env, fecha: new Date().toLocaleDateString() });
+            document.getElementById('g-nom').value = ""; document.getElementById('g-pre').value = ""; document.getElementById('g-env').value = "";
+        };
+
+        window.registrarVenta = async () => {
+            const nom = document.getElementById('v-nom').value;
+            const pre = parseFloat(document.getElementById('v-pre').value) || 0;
+            const vin = document.getElementById('v-vin').value;
+            if(!nom) return;
+            await addDoc(collection(db, "ventas"), { uid: userUID, nom, pre, vin, fecha: new Date().toLocaleDateString() });
+            document.getElementById('v-nom').value = ""; document.getElementById('v-pre').value = "";
+        };
+
+        window.borrar = async (tipo, id) => {
+            if(confirm("¿Borrar?")) await deleteDoc(doc(db, tipo === 'c' ? "compras" : "ventas", id));
+        };
+
+        function render(compras, ventas) {
+            const cuerpo = document.getElementById('tabla-cuerpo');
+            const select = document.getElementById('v-vin');
+            cuerpo.innerHTML = "";
+            select.innerHTML = '<option value="suelto">Venta Suelta</option>';
+            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
+
+            let g = 0, v = 0;
+            compras.forEach(c => {
+                g += c.total;
+                const rec = ventas.filter(x => x.vin === c.id).reduce((s, x) => s + x.pre, 0);
+                cuerpo.innerHTML += `<tr style="background:#fffcf5; font-weight:bold"><td>${c.fecha}</td><td>📦 ${c.nom}</td><td style="color:red">-${c.total.toFixed(2)}€</td><td>Rec: ${rec.toFixed(2)}€</td><td style="color:${(rec-c.total)>=0?'green':'red'}">${(rec-c.total).toFixed(2)}€</td><td><button onclick="borrar('c','${c.id}')" style="background:none; color:red">✕</button></td></tr>`;
+            });
+            ventas.forEach(x => {
+                v += x.pre;
+                cuerpo.innerHTML += `<tr><td>${x.fecha}</td><td>💰 ${x.nom}</td><td>---</td><td style="color:green">+${x.pre.toFixed(2)}€</td><td>---</td><td><button onclick="borrar('v','${x.id}')" style="background:none; color:red">✕</button></td></tr>`;
+            });
+            document.getElementById('t-gastos').innerText = g.toFixed(2) + "€";
+            document.getElementById('t-ventas').innerText = v.toFixed(2) + "€";
+            document.getElementById('t-neto').innerText = (v - g).toFixed(2) + "€";
+        }
+    </script>
+</body>
+</html>
