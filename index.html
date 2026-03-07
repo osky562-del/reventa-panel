@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrixo Business | Seguridad Total</title>
+    <style>
+        :root {
+            --primary: #2563eb; --success: #16a34a; --danger: #dc2626;
+            --dark: #1e293b; --bg: #f8fafc; --max-width: 1100px;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; color: #334155; }
+        .wrapper { width: 95%; max-width: var(--max-width); margin: 0 auto; }
+        header { background: var(--dark); color: white; padding: 30px 0; margin-bottom: 25px; }
+        .resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .stat { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .stat b { display: block; font-size: 1.8rem; margin-top: 10px; }
+        .grid-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); box-sizing: border-box; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .full-width { grid-column: span 2; }
+        input, select { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; box-sizing: border-box; }
+        button { padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+        .btn-compra { background: var(--dark); color: white; }
+        .btn-venta { background: var(--success); color: white; }
+        .btn-backup { background: #64748b; color: white; margin-top: 10px; font-size: 0.8rem; padding: 8px; }
+        .table-section { padding: 0 !important; overflow: hidden; }
+        .table-header { padding: 25px; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        th { background: #f8fafc; color: #64748b; padding: 18px; text-align: left; font-size: 0.8rem; }
+        td { padding: 18px; border-top: 1px solid #f1f5f9; }
+        .row-lote { background: #fffcf5; font-weight: 600; }
+        .negativo { color: var(--danger); }
+        .positivo { color: var(--success); }
+        .hidden-input { display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="wrapper">
+            <h1>🚀 Vrixo Business Control</h1>
+            <div class="resumen">
+                <div class="stat"><span>Inversión</span><b id="t-gastos">0€</b></div>
+                <div class="stat"><span>Ventas</span><b id="t-ventas">0€</b></div>
+                <div class="stat"><span>Neto</span><b id="t-neto">0€</b></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="wrapper">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button onclick="exportarBackup()" class="btn-backup" style="flex:1">💾 Descargar Copia de Seguridad (JSON)</button>
+            <button onclick="document.getElementById('importInput').click()" class="btn-backup" style="flex:1; background: #475569;">📂 Restaurar Copia de Seguridad</button>
+            <input type="file" id="importInput" class="hidden-input" accept=".json" onchange="importarBackup(event)">
+        </div>
+
+        <div class="grid-forms">
+            <section class="card">
+                <h2>📦 Compras (Lotes o Sueltos)</h2>
+                <div class="form-row">
+                    <div class="full-width"><input type="text" id="g-nom" placeholder="Nombre del Lote o Producto"></div>
+                    <input type="number" id="g-pre" placeholder="Precio Compra €">
+                    <input type="number" id="g-env" placeholder="Envío Pagado €">
+                    <div class="full-width"><button onclick="regCompra()" class="btn-compra">Guardar Entrada</button></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>💰 Registrar Venta</h2>
+                <div class="form-row">
+                    <div class="full-width"><input type="text" id="v-nom" placeholder="Producto vendido"></div>
+                    <input type="number" id="v-pre" placeholder="Precio Venta €">
+                    <select id="v-vin"><option value="suelto">Venta Suelta</option></select>
+                    <div class="full-width"><button onclick="regVenta()" class="btn-venta">Guardar Venta</button></div>
+                </div>
+            </section>
+        </div>
+
+        <section class="card table-section">
+            <div class="table-header">
+                <h2 style="margin:0">Historial de Operaciones</h2>
+                <button onclick="limpiarTodo()" style="width:auto; background:#fee2e2; color:red; padding:8px 15px">BORRAR TODO</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Concepto</th><th>Inversión</th><th>Ingreso</th><th>Margen Lote</th><th>Acción</th></tr>
+                    </thead>
+                    <tbody id="cuerpo"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let compras = JSON.parse(localStorage.getItem('vx_c')) || [];
+        let ventas = JSON.parse(localStorage.getItem('vx_v')) || [];
+
+        function regCompra() {
+            const nom = document.getElementById('g-nom').value;
+            const pre = parseFloat(document.getElementById('g-pre').value) || 0;
+            const env = parseFloat(document.getElementById('g-env').value) || 0;
+            if(!nom || (pre+env) <= 0) return alert("Faltan datos");
+            compras.push({ id: Date.now().toString(), fecha: new Date().toLocaleDateString(), nom, total: pre + env });
+            guardar();
+            document.getElementById('g-nom').value = ""; document.getElementById('g-pre').value = ""; document.getElementById('g-env').value = "";
+        }
+
+        function regVenta() {
+            const nom = document.getElementById('v-nom').value;
+            const pre = parseFloat(document.getElementById('v-pre').value) || 0;
+            const vin = document.getElementById('v-vin').value;
+            if(!nom || pre <= 0) return alert("Faltan datos");
+            ventas.push({ id: Date.now().toString(), fecha: new Date().toLocaleDateString(), nom, pre, vin });
+            guardar();
+            document.getElementById('v-nom').value = ""; document.getElementById('v-pre').value = "";
+        }
+
+        function guardar() {
+            localStorage.setItem('vx_c', JSON.stringify(compras));
+            localStorage.setItem('vx_v', JSON.stringify(ventas));
+            render();
+        }
+
+        function exportarBackup() {
+            const data = { compras, ventas };
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Vrixo_Backup_${new Date().toLocaleDateString()}.json`;
+            a.click();
+        }
+
+        function importarBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = JSON.parse(e.target.result);
+                compras = data.compras || [];
+                ventas = data.ventas || [];
+                guardar();
+                alert("✅ Copia de seguridad restaurada con éxito.");
+            };
+            reader.readAsText(file);
+        }
+
+        function borrar(tipo, id) {
+            if(confirm("¿Eliminar?")) {
+                if(tipo==='c') compras = compras.filter(x => x.id !== id);
+                else ventas = ventas.filter(x => x.id !== id);
+                guardar();
+            }
+        }
+
+        function limpiarTodo() {
+            if(confirm("ATENCIÓN: Se borrará TODO. Asegúrate de tener una copia de seguridad.")) {
+                compras = []; ventas = []; guardar();
+            }
+        }
+
+        function render() {
+            const tbody = document.getElementById('cuerpo');
+            const select = document.getElementById('v-vin');
+            tbody.innerHTML = "";
+            select.innerHTML = '<option value="suelto">Venta Suelta</option>';
+            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
+
+            let sumG = 0, sumV = 0;
+            compras.forEach(c => {
+                sumG += c.total;
+                const recup = ventas.filter(v => v.vin === c.id).reduce((s, x) => s + x.pre, 0);
+                const margen = recup - c.total;
+                tbody.innerHTML += `<tr class="row-lote"><td>${c.fecha}</td><td>📦 ${c.nom}</td><td class="negativo">-${c.total.toFixed(2)}€</td><td>Recup: ${recup.toFixed(2)}€</td><td class="${margen>=0?'positivo':'negativo'}">${margen.toFixed(2)}€</td><td><button onclick="borrar('c','${c.id}')" style="color:red; background:none; border:none; cursor:pointer">✕</button></td></tr>`;
+            });
+            ventas.forEach(v => {
+                sumV += v.pre;
+                tbody.innerHTML += `<tr><td>${v.fecha}</td><td>💰 ${v.nom} ${v.vin==='suelto'?'(Suelto)':'(De Lote)'}</td><td>---</td><td class="positivo">+${v.pre.toFixed(2)}€</td><td>---</td><td><button onclick="borrar('v','${v.id}')" style="color:red; background:none; border:none; cursor:pointer">✕</button></td></tr>`;
+            });
+            document.getElementById('t-gastos').innerText = sumG.toFixed(2) + "€";
+            document.getElementById('t-ventas').innerText = sumV.toFixed(2) + "€";
+            const neto = sumV - sumG;
+            document.getElementById('t-neto').innerText = neto.toFixed(2) + "€";
+            document.getElementById('t-neto').style.color = neto >= 0 ? "#4ade80" : "#f87171";
+        }
+        render();
+    </script>
+</body>
+</html>
