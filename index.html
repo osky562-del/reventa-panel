@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrixo - Control de Reventa</title>
+    <style>
+        :root { --red: #dc2626; --green: #16a34a; --bg: #f3f4f6; }
+        body { font-family: sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        header { background: #1e293b; color: white; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
+        .resumen { display: flex; justify-content: space-around; gap: 10px; flex-wrap: wrap; }
+        .stat { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; min-width: 120px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+        input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 5px; width: 100%; box-sizing: border-box; }
+        button { cursor: pointer; font-weight: bold; border: none; color: white; }
+        .btn-gasto { background: #64748b; }
+        .btn-venta { background: var(--green); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        th { background: #f8f9fa; }
+        .lote-row { background: #fff5f5; font-weight: bold; }
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; text-transform: uppercase; }
+        .badge-lote { background: #fee2e2; color: #991b1b; }
+        .badge-suelto { background: #e0f2fe; color: #075985; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Vrixo Business Control</h1>
+        <div class="resumen">
+            <div class="stat">Gastos: <br><b id="t-gastos">0€</b></div>
+            <div class="stat">Ventas: <br><b id="t-ventas">0€</b></div>
+            <div class="stat">Neto: <br><b id="t-neto">0€</b></div>
+        </div>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>📦 1. Registrar Compra (Lote o Suelto)</h2>
+            <div class="form-grid">
+                <input type="text" id="g-nom" placeholder="Nombre Lote/Producto">
+                <input type="number" id="g-pre" placeholder="Precio Compra €">
+                <input type="number" id="g-env" placeholder="Envío Pago €">
+                <button onclick="regCompra()" class="btn-gasto">Guardar Compra</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>💰 2. Registrar Venta</h2>
+            <div class="form-grid">
+                <input type="text" id="v-nom" placeholder="¿Qué has vendido?">
+                <input type="number" id="v-pre" placeholder="Precio Venta €">
+                <select id="v-vin">
+                    <option value="suelto">Venta Suelta (Sin Lote)</option>
+                </select>
+                <button onclick="regVenta()" class="btn-venta">Guardar Venta</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <div style="display:flex; justify-content:space-between">
+                <h2>Historial "Bien Clarito"</h2>
+                <button onclick="limpiarTodo()" style="width:auto; background:#94a3b8; font-size:10px">Limpiar Todo</button>
+            </div>
+            <table id="tabla">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Inversión</th>
+                        <th>Venta</th>
+                        <th>Estado Lote</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpo"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        // --- CEREBRO DEL SISTEMA ---
+        let compras = JSON.parse(localStorage.getItem('vx_c')) || [];
+        let ventas = JSON.parse(localStorage.getItem('vx_v')) || [];
+
+        function regCompra() {
+            const nom = document.getElementById('g-nom').value;
+            const pre = parseFloat(document.getElementById('g-pre').value) || 0;
+            const env = parseFloat(document.getElementById('g-env').value) || 0;
+
+            if(!nom || (pre+env) <= 0) return alert("Faltan datos");
+
+            compras.push({ id: Date.now().toString(), nom, total: pre + env });
+            guardar();
+            document.getElementById('g-nom').value = "";
+            document.getElementById('g-pre').value = "";
+            document.getElementById('g-env').value = "";
+        }
+
+        function regVenta() {
+            const nom = document.getElementById('v-nom').value;
+            const pre = parseFloat(document.getElementById('v-pre').value) || 0;
+            const vin = document.getElementById('v-vin').value;
+
+            if(!nom || pre <= 0) return alert("Faltan datos");
+
+            ventas.push({ id: Date.now().toString(), nom, pre, vin });
+            guardar();
+            document.getElementById('v-nom').value = "";
+            document.getElementById('v-pre').value = "";
+        }
+
+        function borrar(tipo, id) {
+            if(confirm("¿Borrar?")) {
+                if(tipo==='c') compras = compras.filter(x => x.id !== id);
+                else ventas = ventas.filter(x => x.id !== id);
+                guardar();
+            }
+        }
+
+        function limpiarTodo() {
+            if(confirm("¿Borrar TODOS los datos del año?")) {
+                compras = []; ventas = []; guardar();
+            }
+        }
+
+        function guardar() {
+            localStorage.setItem('vx_c', JSON.stringify(compras));
+            localStorage.setItem('vx_v', JSON.stringify(ventas));
+            render();
+        }
+
+        function render() {
+            const tbody = document.getElementById('cuerpo');
+            const select = document.getElementById('v-vin');
+            tbody.innerHTML = "";
+            
+            // Actualizar selector de lotes
+            select.innerHTML = '<option value="suelto">Venta Suelta (Sin Lote)</option>';
+            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
+
+            let sumG = 0, sumV = 0;
+
+            // Dibujar Compras/Lotes
+            compras.forEach(c => {
+                sumG += c.total;
+                const recup = ventas.filter(v => v.vin === c.id).reduce((s, x) => s + x.pre, 0);
+                const margen = recup - c.total;
+
+                tbody.innerHTML += `
+                    <tr class="lote-row">
+                        <td><span class="badge badge-lote">Lote</span> ${c.nom}</td>
+                        <td style="color:red">-${c.total.toFixed(2)}€</td>
+                        <td>Recup: ${recup.toFixed(2)}€</td>
+                        <td style="color:${margen >= 0 ? 'green' : 'red'}">${margen.toFixed(2)}€</td>
+                        <td><button onclick="borrar('c','${c.id}')" style="background:none; color:red">✕</button></td>
+                    </tr>
+                `;
+            });
+
+            // Dibujar Ventas
+            ventas.forEach(v => {
+                sumV += v.pre;
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="badge badge-suelto">${v.vin==='suelto'?'Suelto':'De Lote'}</span> ${v.nom}</td>
+                        <td>---</td>
+                        <td style="color:green">+${v.pre.toFixed(2)}€</td>
+                        <td>---</td>
+                        <td><button onclick="borrar('v','${v.id}')" style="background:none; color:red">✕</button></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('t-gastos').innerText = sumG.toFixed(2) + "€";
+            document.getElementById('t-ventas').innerText = sumV.toFixed(2) + "€";
+            const neto = sumV - sumG;
+            document.getElementById('t-neto').innerText = neto.toFixed(2) + "€";
+            document.getElementById('t-neto').style.color = neto >= 0 ? "lightgreen" : "red";
+        }
+
+        render(); // Cargar al abrir
+    </script>
+</body>
+</html>
