@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrixo Business | Control de Reventa</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --dark: #0f172a;
+            --bg: #f1f5f9;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+        }
+
+        header { 
+            background: var(--dark); 
+            color: white; 
+            width: 100%; 
+            padding: 20px 0; 
+            text-align: center; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .container { 
+            width: 95%; 
+            max-width: 1200px; 
+            margin: 20px auto; 
+        }
+
+        .resumen { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+            margin-top: 15px; 
+            padding: 0 20px;
+        }
+
+        .stat { 
+            background: rgba(255,255,255,0.1); 
+            padding: 15px; 
+            border-radius: 10px; 
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat span { font-size: 0.8rem; text-transform: uppercase; opacity: 0.8; }
+        .stat b { display: block; font-size: 1.4rem; margin-top: 5px; }
+
+        .grid-forms { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 25px;
+        }
+
+        .card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+        }
+
+        h2 { margin-top: 0; font-size: 1.1rem; color: var(--dark); border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+
+        .form-row { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+        }
+
+        .form-row input, .form-row select, .form-row button { 
+            margin-top: 10px; 
+        }
+
+        input, select { 
+            padding: 12px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            outline: none;
+        }
+
+        input:focus { border-color: var(--primary); }
+
+        button { 
+            padding: 12px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .btn-compra { background: var(--dark); color: white; grid-column: span 2; }
+        .btn-venta { background: var(--success); color: white; grid-column: span 2; }
+
+        .table-container { overflow-x: auto; background: white; border-radius: 12px; }
+
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #f8fafc; color: #64748b; font-size: 0.75rem; text-transform: uppercase; padding: 15px; text-align: left; }
+        td { padding: 15px; border-top: 1px solid #f1f5f9; font-size: 0.9rem; }
+
+        .row-lote { background: #fffaf0; font-weight: 600; }
+        .badge { 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 0.7rem; 
+            font-weight: bold; 
+        }
+        .b-lote { background: #fed7aa; color: #9a3412; }
+        .b-suelto { background: #e2e8f0; color: #475569; }
+
+        .negativo { color: var(--danger); font-weight: bold; }
+        .positivo { color: var(--success); font-weight: bold; }
+
+        .btn-del { color: var(--danger); background: none; padding: 5px; font-size: 1.2rem; }
+
+        @media (max-width: 500px) {
+            .grid-forms { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .btn-compra, .btn-venta { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <h1>🚀 Vrixo Business Control</h1>
+            <div class="resumen">
+                <div class="stat"><span>Total Inversión</span><b id="t-gastos">0€</b></div>
+                <div class="stat"><span>Total Ventas</span><b id="t-ventas">0€</b></div>
+                <div class="stat"><span>Beneficio Neto</span><b id="t-neto">0€</b></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="grid-forms">
+            <section class="card">
+                <h2>📦 Compras (Lotes o Sueltos)</h2>
+                <div class="form-row">
+                    <input type="text" id="g-nom" placeholder="Nombre del Lote/Producto" style="grid-column: span 2;">
+                    <input type="number" id="g-pre" placeholder="Precio €">
+                    <input type="number" id="g-env" placeholder="Envío €">
+                    <button onclick="regCompra()" class="btn-compra">Guardar Compra</button>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>💰 Registrar Venta</h2>
+                <div class="form-row">
+                    <input type="text" id="v-nom" placeholder="Producto vendido" style="grid-column: span 2;">
+                    <input type="number" id="v-pre" placeholder="Precio Venta €">
+                    <select id="v-vin">
+                        <option value="suelto">Venta Suelta</option>
+                    </select>
+                    <button onclick="regVenta()" class="btn-venta">Guardar Venta</button>
+                </div>
+            </section>
+        </div>
+
+        <section class="card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin:0">Historial de Operaciones</h2>
+                <button onclick="limpiar()" style="background:#e2e8f0; color:#475569; padding: 5px 10px; font-size: 0.7rem;">BORRAR TODO</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Inversión</th>
+                            <th>Ingreso</th>
+                            <th>Margen Lote</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let compras = JSON.parse(localStorage.getItem('vx_c')) || [];
+        let ventas = JSON.parse(localStorage.getItem('vx_v')) || [];
+
+        function regCompra() {
+            const nom = document.getElementById('g-nom').value;
+            const pre = parseFloat(document.getElementById('g-pre').value) || 0;
+            const env = parseFloat(document.getElementById('g-env').value) || 0;
+            if(!nom || (pre+env) <= 0) return alert("Rellena los campos de compra");
+
+            compras.push({ id: Date.now().toString(), fecha: new Date().toLocaleDateString(), nom, total: pre + env });
+            guardar();
+            document.getElementById('g-nom').value = "";
+            document.getElementById('g-pre').value = "";
+            document.getElementById('g-env').value = "";
+        }
+
+        function regVenta() {
+            const nom = document.getElementById('v-nom').value;
+            const pre = parseFloat(document.getElementById('v-pre').value) || 0;
+            const vin = document.getElementById('v-vin').value;
+            if(!nom || pre <= 0) return alert("Rellena los campos de venta");
+
+            ventas.push({ id: Date.now().toString(), fecha: new Date().toLocaleDateString(), nom, pre, vin });
+            guardar();
+            document.getElementById('v-nom').value = "";
+            document.getElementById('v-pre').value = "";
+        }
+
+        function borrar(tipo, id) {
+            if(confirm("¿Eliminar este registro?")) {
+                if(tipo==='c') compras = compras.filter(x => x.id !== id);
+                else ventas = ventas.filter(x => x.id !== id);
+                guardar();
+            }
+        }
+
+        function limpiar() {
+            if(confirm("¿Seguro? Se borrarán todos los datos guardados.")) {
+                compras = []; ventas = []; guardar();
+            }
+        }
+
+        function guardar() {
+            localStorage.setItem('vx_c', JSON.stringify(compras));
+            localStorage.setItem('vx_v', JSON.stringify(ventas));
+            render();
+        }
+
+        function render() {
+            const tbody = document.getElementById('cuerpo');
+            const select = document.getElementById('v-vin');
+            tbody.innerHTML = "";
+            
+            select.innerHTML = '<option value="suelto">Venta Suelta (Sin Lote)</option>';
+            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
+
+            let sumG = 0, sumV = 0;
+
+            compras.forEach(c => {
+                sumG += c.total;
+                const recup = ventas.filter(v => v.vin === c.id).reduce((s, x) => s + x.pre, 0);
+                const margen = recup - c.total;
+
+                tbody.innerHTML += `
+                    <tr class="row-lote">
+                        <td>${c.fecha}</td>
+                        <td><span class="badge b-lote">LOTE</span> ${c.nom}</td>
+                        <td class="negativo">-${c.total.toFixed(2)}€</td>
+                        <td>Recup: ${recup.toFixed(2)}€</td>
+                        <td class="${margen >= 0 ? 'positivo' : 'negativo'}">${margen.toFixed(2)}€</td>
+                        <td><button class="btn-del" onclick="borrar('c','${c.id}')">✕</button></td>
+                    </tr>
+                `;
+            });
+
+            ventas.forEach(v => {
+                sumV += v.pre;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${v.fecha}</td>
+                        <td><span class="badge b-suelto">${v.vin==='suelto'?'SUELTO':'DE LOTE'}</span> ${v.nom}</td>
+                        <td>---</td>
+                        <td class="positivo">+${v.pre.toFixed(2)}€</td>
+                        <td>---</td>
+                        <td><button class="btn-del" onclick="borrar('v','${v.id}')">✕</button></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('t-gastos').innerText = sumG.toFixed(2) + "€";
+            document.getElementById('t-ventas').innerText = sumV.toFixed(2) + "€";
+            const neto = sumV - sumG;
+            document.getElementById('t-neto').innerText = neto.toFixed(2) + "€";
+            document.getElementById('t-neto').style.color = neto >= 0 ? "#4ade80" : "#f87171";
+        }
+
+        render();
+    </script>
+</body>
+</html>
