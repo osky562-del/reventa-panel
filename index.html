@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrixo - Control de Reventa</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Vrixo Business</h1>
+        <div class="balance-container">
+            <div class="stat"><span>Inversión/Gastos:</span> <b id="total-gastos">0€</b></div>
+            <div class="stat"><span>Ventas/Ingresos:</span> <b id="total-ingresos">0€</b></div>
+            <div class="stat highlight"><span>Beneficio Neto:</span> <b id="beneficio-total">0€</b></div>
+        </div>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>📝 Nuevo Registro</h2>
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>Fecha</label>
+                    <input type="date" id="fecha">
+                </div>
+                <div class="input-group">
+                    <label>Concepto / Producto</label>
+                    <input type="text" id="concepto" placeholder="Ej: Lote 10 juegos PS2">
+                </div>
+                <div class="input-group">
+                    <label>Importe (€)</label>
+                    <input type="number" id="importe" step="0.01" placeholder="0.00">
+                </div>
+                <div class="input-group">
+                    <label>Plataforma</label>
+                    <select id="plataforma">
+                        <option value="Wallapop">Wallapop</option>
+                        <option value="Vinted">Vinted</option>
+                        <option value="Amazon">Amazon</option>
+                        <option value="Mano">En mano / Otros</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Tipo de Movimiento</label>
+                    <select id="tipo">
+                        <option value="gasto">Es un Gasto (Compra/Envío)</option>
+                        <option value="ingreso">Es un Ingreso (Venta)</option>
+                    </select>
+                </div>
+                <button onclick="agregarMovimiento()" class="btn-add">Añadir Datos</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="header-tabla">
+                <h2>Historial de Movimientos</h2>
+                <button onclick="exportarExcel()" class="btn-excel">📥 Descargar Excel (CSV)</button>
+            </div>
+            
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Plataforma</th>
+                            <th>Importe</th>
+                            <th>Tipo</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-cuerpo">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
