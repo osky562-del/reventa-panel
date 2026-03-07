@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Trabajo Control</title>
+
+<style>
+
+body{
+margin:0;
+background:#0f172a;
+font-family:Arial;
+display:flex;
+justify-content:center;
+}
+
+.app{
+width:100%;
+max-width:480px;
+padding:15px;
+color:white;
+text-align:center;
+}
+
+select,input,button{
+width:100%;
+padding:14px;
+margin:6px 0;
+font-size:16px;
+border-radius:10px;
+border:none;
+}
+
+button{
+font-weight:bold;
+cursor:pointer;
+}
+
+.save{background:#22c55e;color:white;}
+.delete{background:#ef4444;color:white;}
+
+#calendar{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:6px;
+margin-top:15px;
+}
+
+.day{
+padding:16px;
+background:#1e293b;
+border-radius:10px;
+font-size:17px;
+cursor:pointer;
+}
+
+.trabajoDia{background:#22c55e;}
+.trabajoNoche{background:#ef4444;}
+.dormir{background:#f59e0b;}
+.selected{outline:3px solid white;}
+
+.section{
+margin-top:25px;
+}
+
+.box{
+width:16px;
+height:16px;
+display:inline-block;
+margin-right:6px;
+border-radius:4px;
+}
+
+.green{background:#22c55e;}
+.red{background:#ef4444;}
+.orange{background:#f59e0b;}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+<h1>🚛 Control Trabajo</h1>
+
+<select id="month"></select>
+<select id="year"></select>
+
+<div id="calendar"></div>
+
+<div class="section">
+
+<h3>Día seleccionado: <span id="selectedDay">-</span></h3>
+
+<select id="tipo">
+<option value="">Tipo</option>
+<option value="dia">Trabajo día</option>
+<option value="noche">Trabajo noche</option>
+<option value="dormir">Dormir fuera</option>
+</select>
+
+<input id="camion" placeholder="Camión">
+<input id="ruta" placeholder="Ruta">
+<input id="horas" placeholder="Horas trabajadas">
+
+<button class="save" onclick="guardar()">Guardar</button>
+<button class="delete" onclick="borrar()">Borrar</button>
+
+</div>
+
+<div class="section">
+
+<h2>📊 Resumen</h2>
+
+<p>Días trabajados mes: <b id="resMes">0</b></p>
+<p>Días trabajados año: <b id="resAnio">0</b></p>
+<p>Total horas mes: <b id="resHoras">0</b></p>
+
+</div>
+
+</div>
+
+<script>
+
+let selected=null
+let data=JSON.parse(localStorage.getItem("trabajoPro"))||{}
+
+const calendar=document.getElementById("calendar")
+const monthSelect=document.getElementById("month")
+const yearSelect=document.getElementById("year")
+
+let months=["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+"Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+
+months.forEach((m,i)=>{
+let op=document.createElement("option")
+op.value=i
+op.text=m
+monthSelect.appendChild(op)
+})
+
+for(let y=2024;y<=2045;y++){
+let op=document.createElement("option")
+op.value=y
+op.text=y
+yearSelect.appendChild(op)
+}
+
+monthSelect.value=new Date().getMonth()
+yearSelect.value=new Date().getFullYear()
+
+monthSelect.onchange=draw
+yearSelect.onchange=draw
+
+function draw(){
+
+calendar.innerHTML=""
+
+let m=parseInt(monthSelect.value)
+let y=parseInt(yearSelect.value)
+
+let days=new Date(y,m+1,0).getDate()
+
+for(let d=1; d<=days; d++){
+
+let div=document.createElement("div")
+div.className="day"
+div.innerText=d
+
+let key=y+"-"+m+"-"+d
+let info=data[key]
+
+if(info){
+
+if(info.tipo==="dia") div.classList.add("trabajoDia")
+if(info.tipo==="noche") div.classList.add("trabajoNoche")
+if(info.tipo==="dormir") div.classList.add("dormir")
+
+}
+
+if(selected===d) div.classList.add("selected")
+
+div.onclick=()=>selectDay(d)
+
+calendar.appendChild(div)
+
+}
+
+resumen()
+
+}
+
+function selectDay(d){
+
+selected=d
+document.getElementById("selectedDay").innerText=d
+
+let key=yearSelect.value+"-"+monthSelect.value+"-"+d
+let info=data[key]||{}
+
+document.getElementById("tipo").value=info.tipo||""
+document.getElementById("camion").value=info.camion||""
+document.getElementById("ruta").value=info.ruta||""
+document.getElementById("horas").value=info.horas||""
+
+draw()
+
+}
+
+function guardar(){
+
+if(!selected){
+alert("Selecciona un día")
+return
+}
+
+let key=yearSelect.value+"-"+monthSelect.value+"-"+selected
+
+data[key]={
+tipo:document.getElementById("tipo").value,
+camion:document.getElementById("camion").value,
+ruta:document.getElementById("ruta").value,
+horas:parseFloat(document.getElementById("horas").value)||0
+}
+
+localStorage.setItem("trabajoPro",JSON.stringify(data))
+
+draw()
+
+}
+
+function borrar(){
+
+if(!selected)return
+
+let key=yearSelect.value+"-"+monthSelect.value+"-"+selected
+
+delete data[key]
+
+localStorage.setItem("trabajoPro",JSON.stringify(data))
+
+draw()
+
+}
+
+function resumen(){
+
+let m=monthSelect.value
+let y=yearSelect.value
+
+let mes=0
+let anio=0
+let horasMes=0
+
+for(let k in data){
+
+let parts=k.split("-")
+
+if(parts[0]==y) anio++
+
+if(parts[0]==y && parts[1]==m){
+
+mes++
+horasMes+=data[k].horas||0
+}
+
+}
+
+document.getElementById("resMes").innerText=mes
+document.getElementById("resAnio").innerText=anio
+document.getElementById("resHoras").innerText=horasMes
+
+}
+
+draw()
+
+</script>
+
+</body>
+</html>
