@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oportunidades Vrixo</title>
+<link rel="stylesheet" href="style.css">
+
+<!-- Firebase -->
+<script type="module" src="firebase-config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
+<!-- Chart.js para gráficas -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+
+<header>
+<h1>🚀 Oportunidades Vrixo</h1>
+<p>Panel de ventas profesional</p>
+<button id="loginBtn">Login con Google</button>
+</header>
+
+<main id="app" style="display:none">
+
+<section class="card">
+<h2>Dashboard</h2>
+<p>Beneficio total: <span id="totalBeneficio">0€</span></p>
+<canvas id="ventasChart"></canvas>
+</section>
+
+<section class="card">
+<h2>Registrar venta</h2>
+<input id="producto" placeholder="Producto">
+<input id="coste" type="number" placeholder="Coste">
+<input id="venta" type="number" placeholder="Precio venta">
+<input id="envio" type="number" placeholder="Envío">
+<input id="plataforma" placeholder="Plataforma">
+<button id="guardarBtn">Guardar venta</button>
+</section>
+
+<section class="card">
+<h2>Historial</h2>
+<table>
+<thead>
+<tr>
+<th>Producto</th>
+<th>Coste</th>
+<th>Venta</th>
+<th>Envío</th>
+<th>Beneficio</th>
+<th>Plataforma</th>
+<th>Fecha</th>
+</tr>
+</thead>
+<tbody id="tabla"></tbody>
+</table>
+</section>
+
+</main>
+
+<script type="module" src="app.js"></script>
+
+</body>
+</html>
