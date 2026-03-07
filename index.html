@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrixo Business | Pro Edition</title>
+    <style>
+        :root {
+            --primary: #2563eb; --success: #16a34a; --danger: #dc2626;
+            --dark: #1e293b; --bg: #f1f5f9; --max-width: 1100px;
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 0; 
+            color: #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Alineación global */
+        .container {
+            width: 95%;
+            max-width: var(--max-width);
+            box-sizing: border-box;
+        }
+
+        header { 
+            background: var(--dark); 
+            color: white; 
+            width: 100%; 
+            padding: 40px 0; 
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+        }
+
+        .resumen { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 20px; 
+        }
+
+        .stat { 
+            background: rgba(255,255,255,0.08); 
+            padding: 20px; 
+            border-radius: 12px; 
+            text-align: center; 
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stat span { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+        .stat b { display: block; font-size: 1.8rem; margin-top: 8px; }
+
+        /* Controles de Seguridad */
+        .backup-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        /* Formularios */
+        .grid-forms { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 25px; 
+            margin-bottom: 30px;
+        }
+
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        h2 { margin: 0 0 20px 0; font-size: 1.25rem; color: var(--dark); border-bottom: 2px solid var(--bg); padding-bottom: 12px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full { grid-column: span 2; }
+
+        input, select { 
+            padding: 14px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            font-size: 15px; 
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button { 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .btn-compra { background: var(--dark); color: white; }
+        .btn-venta { background: var(--success); color: white; }
+        .btn-backup { background: #64748b; color: white; }
+        .btn-restore { background: #475569; color: white; }
+
+        /* Tabla */
+        .table-card { padding: 0 !important; overflow: hidden; }
+        .table-header { padding: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .table-container { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { background: #f8fafc; color: #64748b; padding: 20px; text-align: left; font-size: 0.85rem; text-transform: uppercase; }
+        td { padding: 20px; border-top: 1px solid #f1f5f9; font-size: 1rem; }
+
+        .row-lote { background: #fffcf5; font-weight: 600; }
+        .badge { padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; margin-right: 8px; }
+        .b-lote { background: #fef3c7; color: #92400e; }
+        .b-suelto { background: #f1f5f9; color: #475569; }
+
+        .negativo { color: var(--danger); font-weight: bold; }
+        .positivo { color: var(--success); font-weight: bold; }
+        .btn-del { color: var(--danger); background: none; font-size: 1.2rem; width: auto; padding: 0; }
+
+        @media (max-width: 850px) {
+            .resumen, .grid-forms, .backup-bar { grid-template-columns: 1fr; }
+            .stat b { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <h1 style="margin: 0 0 25px 0; font-size: 2rem;">🚀 Vrixo Business Control</h1>
+            <div class="resumen">
+                <div class="stat"><span>Inversión Total</span><b id="t-gastos">0€</b></div>
+                <div class="stat"><span>Ventas Totales</span><b id="t-ventas">0€</b></div>
+                <div class="stat"><span>Beneficio Neto</span><b id="t-neto">0€</b></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="backup-bar">
+            <button onclick="exportarData()" class="btn-backup">💾 Descargar Copia de Seguridad</button>
+            <button onclick="document.getElementById('fileIn').click()" class="btn-restore">📂 Restaurar Copia</button>
+            <input type="file" id="fileIn" style="display:none" accept=".json" onchange="importarData(event)">
+        </div>
+
+        <div class="grid-forms">
+            <section class="card">
+                <h2>📦 Compras (Lote o Suelto)</h2>
+                <div class="form-row">
+                    <div class="full"><input type="text" id="g-nom" placeholder="Nombre del Lote o Producto"></div>
+                    <input type="number" id="g-pre" placeholder="Precio Compra €">
+                    <input type="number" id="g-env" placeholder="Envío Pagado €">
+                    <div class="full"><button onclick="regCompra()" class="btn-compra">Guardar Entrada</button></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>💰 Registrar Venta</h2>
+                <div class="form-row">
+                    <div class="full"><input type="text" id="v-nom" placeholder="¿Qué has vendido?"></div>
+                    <input type="number" id="v-pre" placeholder="Precio Venta €">
+                    <select id="v-vin"><option value="suelto">Venta Suelta</option></select>
+                    <div class="full"><button onclick="regVenta()" class="btn-venta">Guardar Venta</button></div>
+                </div>
+            </section>
+        </div>
+
+        <section class="card table-card">
+            <div class="table-header">
+                <h2 style="margin:0; border:0">Historial de Operaciones</h2>
+                <button onclick="limpiar()" style="background:#fee2e2; color:var(--danger); padding:8px 15px; font-size:0.8rem; width:auto">LIMPIAR TODO</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Inversión</th>
+                            <th>Ingreso</th>
+                            <th>Margen Lote</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let compras = JSON.parse(localStorage.getItem('vx_c')) || [];
+        let ventas = JSON.parse(localStorage.getItem('vx_v')) || [];
+
+        function regCompra() {
+            const nom = document.getElementById('g-nom').value;
+            const pre = parseFloat(document.getElementById('g-pre').value) || 0;
+            const env = parseFloat(document.getElementById('g-env').value) || 0;
+            if(!nom || (pre+env) <= 0) return alert("Faltan datos");
+
+            compras.push({ id: Date.now().toString(), fecha: new Date().toLocaleDateString(), nom, total: pre + env });
+            actualizar();
+            document.getElementById('g-nom').value = ""; document.getElementById('g-pre').value = ""; document.getElementById('g-env').value = "";
+        }
+
+        function regVenta() {
+            const nom = document.getElementById('v-nom').value;
+            const pre = parseFloat(document.getElementById('v-pre').value) || 0;
+            const vin = document.getElementById('v-vin').value;
+            if(!nom || pre <= 0) return alert("Faltan datos");
+
+            ventas.push({ id: Date.now().toString(), fecha: new Date().toLocaleDateString(), nom, pre, vin });
+            actualizar();
+            document.getElementById('v-nom').value = ""; document.getElementById('v-pre').value = "";
+        }
+
+        function exportarData() {
+            const blob = new Blob([JSON.stringify({compras, ventas})], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `Vrixo_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        }
+
+        function importarData(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const d = JSON.parse(ev.target.result);
+                compras = d.compras || []; ventas = d.ventas || [];
+                actualizar();
+                alert("✅ Restaurado con éxito");
+            };
+            reader.readAsText(file);
+        }
+
+        function borrar(tipo, id) {
+            if(confirm("¿Eliminar?")) {
+                if(tipo==='c') compras = compras.filter(x => x.id !== id);
+                else ventas = ventas.filter(x => x.id !== id);
+                actualizar();
+            }
+        }
+
+        function limpiar() {
+            if(confirm("Se borrará TODO. Haz una copia antes.")) {
+                compras = []; ventas = []; actualizar();
+            }
+        }
+
+        function actualizar() {
+            localStorage.setItem('vx_c', JSON.stringify(compras));
+            localStorage.setItem('vx_v', JSON.stringify(ventas));
+            render();
+        }
+
+        function render() {
+            const tbody = document.getElementById('cuerpo');
+            const select = document.getElementById('v-vin');
+            tbody.innerHTML = "";
+            select.innerHTML = '<option value="suelto">Venta Suelta</option>';
+            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
+
+            let sumG = 0, sumV = 0;
+
+            compras.forEach(c => {
+                sumG += c.total;
+                const rec = ventas.filter(v => v.vin === c.id).reduce((s, x) => s + x.pre, 0);
+                const margen = rec - c.total;
+                tbody.innerHTML += `
+                    <tr class="row-lote">
+                        <td>${c.fecha}</td>
+                        <td><span class="badge b-lote">LOTE</span> ${c.nom}</td>
+                        <td class="negativo">-${c.total.toFixed(2)}€</td>
+                        <td>Recup: ${rec.toFixed(2)}€</td>
+                        <td class="${margen>=0?'positivo':'negativo'}">${margen.toFixed(2)}€</td>
+                        <td style="text-align:right"><button class="btn-del" onclick="borrar('c','${c.id}')">✕</button></td>
+                    </tr>`;
+            });
+
+            ventas.forEach(v => {
+                sumV += v.pre;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${v.fecha}</td>
+                        <td><span class="badge b-suelto">${v.vin==='suelto'?'SUELTO':'DE LOTE'}</span> ${v.nom}</td>
+                        <td>---</td>
+                        <td class="positivo">+${v.pre.toFixed(2)}€</td>
+                        <td>---</td>
+                        <td style="text-align:right"><button class="btn-del" onclick="borrar('v','${v.id}')">✕</button></td>
+                    </tr>`;
+            });
+
+            document.getElementById('t-gastos').innerText = sumG.toFixed(2) + "€";
+            document.getElementById('t-ventas').innerText = sumV.toFixed(2) + "€";
+            const neto = sumV - sumG;
+            const nEl = document.getElementById('t-neto');
+            nEl.innerText = neto.toFixed(2) + "€";
+            nEl.style.color = neto >= 0 ? "#4ade80" : "#f87171";
+        }
+        render();
+    </script>
+</body>
+</html>
