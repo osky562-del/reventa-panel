@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vrixo Business | Cloud Sync</title>
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --dark: #1e293b; --bg: #f1f5f9; --max-width: 1100px; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .wrapper { width: 95%; max-width: var(--max-width); margin: 0 auto; box-sizing: border-box; }
+        
+        #loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        #app-content { display:none; width: 100%; }
+
+        header { background: var(--dark); color: white; width: 100%; padding: 30px 0; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .stat { background: rgba(255,255,255,0.08); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .stat b { display: block; font-size: 1.8rem; margin-top: 10px; }
+
+        .grid-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); box-sizing: border-box; }
+        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid var(--bg); padding-bottom: 10px; margin-bottom: 20px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; width: 100%; box-sizing: border-box; }
+        button { cursor: pointer; font-weight: bold; border: none; transition: 0.2s; }
+        .btn-compra { background: var(--dark); color: white; grid-column: span 2; }
+        .btn-venta { background: var(--success); color: white; grid-column: span 2; }
+
+        .table-card { padding: 0 !important; overflow: hidden; margin-bottom: 50px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { background: #f8fafc; color: #64748b; padding: 15px; text-align: left; font-size: 0.8rem; text-transform: uppercase; }
+        td { padding: 15px; border-top: 1px solid #f1f5f9; }
+        .row-lote { background: #fffcf5; font-weight: bold; }
+        .negativo { color: var(--danger); }
+        .positivo { color: var(--success); }
+        
+        @media (max-width: 800px) { .grid-forms, .resumen { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <h1 style="font-size: 2.5rem; margin: 0;">VRIXO</h1>
+        <p id="status-text">Iniciando conexión segura...</p>
+    </div>
+
+    <div id="app-content">
+        <header>
+            <div class="wrapper">
+                <h1 style="margin:0 0 20px 0">🚀 Panel Vrixo Cloud</h1>
+                <div class="resumen">
+                    <div class="stat"><span>Inversión</span><b id="t-gastos">0€</b></div>
+                    <div class="stat"><span>Ventas</span><b id="t-ventas">0€</b></div>
+                    <div class="stat"><span>Neto</span><b id="t-neto">0€</b></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="wrapper">
+            <div class="grid-forms">
+                <section class="card">
+                    <h2>📦 Compras (Lote o Suelto)</h2>
+                    <div class="form-row">
+                        <input type="text" id="g-nom" placeholder="Nombre Lote/Producto" style="grid-column: span 2;">
+                        <input type="number" id="g-pre" placeholder="Precio Compra €">
+                        <input type="number" id="g-env" placeholder="Envío Pagado €">
+                        <button onclick="window.regCompra()" class="btn-compra">Guardar Entrada</button>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>💰 Registrar Venta</h2>
+                    <div class="form-row">
+                        <input type="text" id="v-nom" placeholder="Producto vendido" style="grid-column: span 2;">
+                        <input type="number" id="v-pre" placeholder="Precio Venta €">
+                        <select id="v-vin"><option value="suelto">Venta Suelta</option></select>
+                        <button onclick="window.regVenta()" class="btn-venta">Guardar Venta</button>
+                    </div>
+                </section>
+            </div>
+
+            <section class="card table-card">
+                <div style="padding:20px; font-weight:bold; border-bottom:1px solid #eee">Historial Sincronizado</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>Fecha</th><th>Concepto</th><th>Inversión</th><th>Ingreso</th><th>Margen Lote</th><th>Acción</th></tr>
+                        </thead>
+                        <tbody id="cuerpo"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBphY_jaOOOVOzwzfoXE78_iDVOQYRhA2o",
+            authDomain: "control-de-gastos-39154.firebaseapp.com",
+            projectId: "control-de-gastos-39154",
+            storageBucket: "control-de-gastos-39154.firebasestorage.app",
+            messagingSenderId: "845236944662",
+            appId: "1:845236944662:web:897201644eaf708afd5a37",
+            measurementId: "G-LRPGXQYBLK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userUID = null;
+        let compras = [];
+        let ventas = [];
+
+        // --- EL PARACAÍDAS (AUTH AUTOMÁTICO) ---
+        onAuthStateChanged(auth, async (user) => {
+            try {
+                if (user) {
+                    userUID = user.uid;
+                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('app-content').style.display = 'block';
+                    iniciarSincronizacion();
+                } else {
+                    document.getElementById('status-text').innerText = "Autenticando de forma anónima...";
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Error crítico:", error);
+                document.getElementById('status-text').innerHTML = `<b style="color:red">ERROR: ${error.message}</b><br>Revisa si activaste el acceso Anónimo en Firebase.`;
+            }
+        });
+
+        function iniciarSincronizacion() {
+            onSnapshot(query(collection(db, "compras"), where("uid", "==", userUID)), (snap) => {
+                compras = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                renderizar();
+            });
+
+            onSnapshot(query(collection(db, "ventas"), where("uid", "==", userUID)), (snap) => {
+                ventas = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                renderizar();
+            });
+        }
+
+        window.regCompra = async () => {
+            const nom = document.getElementById('g-nom').value;
+            const pre = parseFloat(document.getElementById('g-pre').value) || 0;
+            const env = parseFloat(document.getElementById('g-env').value) || 0;
+            if(!nom || (pre+env) <= 0) return;
+
+            try {
+                await addDoc(collection(db, "compras"), {
+                    uid: userUID,
+                    nom,
+                    total: pre + env,
+                    fecha: new Date().toLocaleDateString()
+                });
+                document.getElementById('g-nom').value = ""; document.getElementById('g-pre').value = ""; document.getElementById('g-env').value = "";
+            } catch (e) { alert("Error al guardar compra: " + e.message); }
+        };
+
+        window.regVenta = async () => {
+            const nom = document.getElementById('v-nom').value;
+            const pre = parseFloat(document.getElementById('v-pre').value) || 0;
+            const vin = document.getElementById('v-vin').value;
+            if(!nom || pre <= 0) return;
+
+            try {
+                await addDoc(collection(db, "ventas"), {
+                    uid: userUID,
+                    nom,
+                    pre,
+                    vin,
+                    fecha: new Date().toLocaleDateString()
+                });
+                document.getElementById('v-nom').value = ""; document.getElementById('v-pre').value = "";
+            } catch (e) { alert("Error al guardar venta: " + e.message); }
+        };
+
+        window.borrar = async (tipo, id) => {
+            if(confirm("¿Eliminar este registro de la nube?")) {
+                await deleteDoc(doc(db, tipo === 'c' ? "compras" : "ventas", id));
+            }
+        };
+
+        function renderizar() {
+            const cuerpo = document.getElementById('cuerpo');
+            const select = document.getElementById('v-vin');
+            cuerpo.innerHTML = "";
+            select.innerHTML = '<option value="suelto">Venta Suelta</option>';
+            
+            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
+
+            let sG = 0, sV = 0;
+            compras.forEach(c => {
+                sG += c.total;
+                const rec = ventas.filter(v => v.vin === c.id).reduce((acc, curr) => acc + curr.pre, 0);
+                const margen = rec - c.total;
+                cuerpo.innerHTML += `
+                    <tr class="row-lote">
+                        <td>${c.fecha}</td>
+                        <td>📦 ${c.nom}</td>
+                        <td class="negativo">-${c.total.toFixed(2)}€</td>
+                        <td>Recup: ${rec.toFixed(2)}€</td>
+                        <td class="${margen>=0?'positivo':'negativo'}">${margen.toFixed(2)}€</td>
+                        <td><button onclick="window.borrar('c','${c.id}')" style="color:red; background:none; cursor:pointer">✕</button></td>
+                    </tr>`;
+            });
+
+            ventas.forEach(v => {
+                sV += v.pre;
+                cuerpo.innerHTML += `
+                    <tr>
+                        <td>${v.fecha}</td>
+                        <td>💰 ${v.nom} ${v.vin==='suelto'?'(Suelto)':'(De Lote)'}</td>
+                        <td>---</td>
+                        <td class="positivo">+${v.pre.toFixed(2)}€</td>
+                        <td>---</td>
+                        <td><button onclick="window.borrar('v','${v.id}')" style="color:red; background:none; border:none; cursor:pointer">✕</button></td>
+                    </tr>`;
+            });
+
+            document.getElementById('t-gastos').innerText = sG.toFixed(2) + "€";
+            document.getElementById('t-ventas').innerText = sV.toFixed(2) + "€";
+            const neto = sV - sG;
+            const nEl = document.getElementById('t-neto');
+            nEl.innerText = neto.toFixed(2) + "€";
+            nEl.style.color = neto >= 0 ? "#16a34a" : "#dc2626";
+        }
+    </script>
+</body>
+</html>
