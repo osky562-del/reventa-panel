@@ -1,0 +1,5 @@
+table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; font-size: 14px; }
+th { background: #f8f9fa; font-weight: bold; }
+.stat h2 { margin: 5px 0 0 0; font-size: 1.5rem; }
+.card { margin-bottom: 20px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
