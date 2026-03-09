@@ -3,25 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VRIXO | Gestión de Reventa</title>
+    <title>VRIXO | Panel Final</title>
     <style>
         :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --dark: #1e293b; --bg: #f1f5f9; --max-width: 1100px; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; color: #334155; }
         .container { width: 95%; max-width: var(--max-width); box-sizing: border-box; }
         
-        /* Pantalla de Login */
+        /* Login */
         #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; width: 100%; }
         .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
         
-        /* App Principal */
+        /* App */
         #app-content { display: none; width: 100%; }
-        header { background: var(--dark); color: white; width: 100%; padding: 30px 0; margin-bottom: 30px; display: flex; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .header-content { display: flex; flex-direction: column; width: 100%; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        header { background: var(--dark); color: white; width: 100%; padding: 30px 0; margin-bottom: 30px; display: flex; justify-content: center; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         
         .resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .stat { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
-        .stat span { font-size: 0.7rem; text-transform: uppercase; opacity: 0.8; }
+        .stat { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; text-align: center; }
         .stat b { display: block; font-size: 1.4rem; margin-top: 5px; }
 
         .grid-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
@@ -29,13 +27,14 @@
         
         input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
         button { cursor: pointer; font-weight: bold; border: none; background: var(--primary); color: white; }
+        
         .btn-compra { background: var(--dark); }
         .btn-venta { background: var(--success); }
-        .btn-backup { background: #64748b; font-size: 0.7rem; padding: 8px; width: auto; }
-        .btn-salir { background: none; color: #94a3b8; text-decoration: underline; font-size: 0.8rem; width: auto; }
+        .btn-rescate { background: #f59e0b; font-size: 0.7rem; width: auto; padding: 8px 12px; }
+        .btn-backup { background: #64748b; font-size: 0.7rem; width: auto; padding: 8px 12px; }
 
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; font-size: 0.9rem; }
-        th { background: #f8fafc; padding: 12px; text-align: left; color: #64748b; font-size: 0.75rem; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+        th { background: #f8fafc; padding: 12px; text-align: left; color: #64748b; font-size: 0.8rem; }
         td { padding: 12px; border-top: 1px solid #f1f5f9; }
         .row-lote { background: #fffcf0; font-weight: bold; }
         
@@ -46,30 +45,28 @@
 
     <div id="login-screen">
         <div class="login-card">
-            <h1 style="margin:0 0 10px 0">VRIXO</h1>
-            <p style="color:#64748b; margin-bottom:20px;">Acceso Seguro</p>
+            <h1>VRIXO</h1>
             <input type="email" id="email" placeholder="Email">
             <input type="password" id="pass" placeholder="Contraseña">
-            <button onclick="entrar()">Entrar al Panel</button>
+            <button onclick="entrar()">Entrar</button>
         </div>
     </div>
 
     <div id="app-content">
         <header>
             <div class="container">
-                <div class="header-content">
-                    <div class="header-top">
-                        <h2 style="margin:0">🚀 Mi Panel</h2>
-                        <div style="display:flex; gap:10px;">
-                            <button class="btn-backup" onclick="exportarData()">💾 Backup</button>
-                            <button class="btn-salir" onclick="salir()">Cerrar</button>
-                        </div>
+                <div class="header-top">
+                    <h2 style="margin:0">🚀 Vrixo Cloud</h2>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn-rescate" onclick="rescatarDatos()">⚠️ Rescatar Datos</button>
+                        <button class="btn-backup" onclick="exportarData()">💾 Backup</button>
+                        <button onclick="salir()" style="background:none; color:#94a3b8; width:auto; text-decoration:underline">Salir</button>
                     </div>
-                    <div class="resumen">
-                        <div class="stat"><span>Inversión</span><b id="t-gastos">0.00€</b></div>
-                        <div class="stat"><span>Ventas</span><b id="t-ventas">0.00€</b></div>
-                        <div class="stat"><span>Neto</span><b id="t-neto">0.00€</b></div>
-                    </div>
+                </div>
+                <div class="resumen">
+                    <div class="stat"><span>Inversión</span><b id="t-gastos">0.00€</b></div>
+                    <div class="stat"><span>Ventas</span><b id="t-ventas">0.00€</b></div>
+                    <div class="stat"><span>Neto</span><b id="t-neto">0.00€</b></div>
                 </div>
             </div>
         </header>
@@ -77,14 +74,14 @@
         <div class="container">
             <div class="grid-forms">
                 <section class="card">
-                    <h3 style="margin-top:0">📦 Compra</h3>
-                    <input type="text" id="g-nom" placeholder="Lote o Producto">
+                    <h3>📦 Compras</h3>
+                    <input type="text" id="g-nom" placeholder="Producto/Lote">
                     <input type="number" id="g-pre" placeholder="Precio €">
                     <input type="number" id="g-env" placeholder="Envío €">
                     <button onclick="addCompra()" class="btn-compra">Guardar</button>
                 </section>
                 <section class="card">
-                    <h3 style="margin-top:0">💰 Venta</h3>
+                    <h3>💰 Ventas</h3>
                     <input type="text" id="v-nom" placeholder="Vendido">
                     <input type="number" id="v-pre" placeholder="Precio Venta €">
                     <select id="v-vin"><option value="suelto">Suelto</option></select>
@@ -92,8 +89,8 @@
                 </section>
             </div>
 
-            <div style="overflow-x:auto; background:white; border-radius:15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                <table id="tabla">
+            <div style="overflow-x:auto; background:white; border-radius:15px;">
+                <table>
                     <thead><tr><th>Fecha</th><th>Concepto</th><th>Costo</th><th>Venta</th><th>Margen</th><th></th></tr></thead>
                     <tbody id="cuerpo"></tbody>
                 </table>
@@ -104,10 +101,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // CONFIGURACIÓN DE TU PROYECTO
         const firebaseConfig = {
             apiKey: "AIzaSyBphY_jaOOOVOzwzfoXE78_iDVOQYRhA2o",
             authDomain: "control-de-gastos-39154.firebaseapp.com",
@@ -123,11 +119,10 @@
         let userUID = null;
         let dataLocal = { compras: [], ventas: [] };
 
-        // --- SISTEMA DE LOGIN ---
         window.entrar = () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('pass').value;
-            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Error: Datos incorrectos"));
+            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Acceso denegado"));
         };
         window.salir = () => signOut(auth);
 
@@ -143,23 +138,38 @@
             }
         });
 
-        // --- MANEJO DE DATOS ---
         function iniciarSincro() {
             onSnapshot(query(collection(db, "compras"), where("uid", "==", userUID)), (s1) => {
                 dataLocal.compras = s1.docs.map(d => ({id: d.id, ...d.data()}));
                 onSnapshot(query(collection(db, "ventas"), where("uid", "==", userUID)), (s2) => {
                     dataLocal.ventas = s2.docs.map(d => ({id: d.id, ...d.data()}));
-                    actualizarTabla();
+                    actualizarUI();
                 });
             });
         }
 
+        window.rescatarDatos = async () => {
+            if(!confirm("¿Asignar datos antiguos a tu cuenta actual?")) return;
+            try {
+                const collections = ["compras", "ventas"];
+                for (let coll of collections) {
+                    const snap = await getDocs(collection(db, coll));
+                    for (let d of snap.docs) {
+                        if(!d.data().uid) {
+                            await updateDoc(doc(db, coll, d.id), { uid: userUID });
+                        }
+                    }
+                }
+                alert("¡Datos rescatados! Recarga la página.");
+                location.reload();
+            } catch (e) { alert("Error: " + e.message + ". Recuerda poner las reglas en true."); }
+        };
+
         window.addCompra = async () => {
             const nom = document.getElementById('g-nom').value;
-            const pre = parseFloat(document.getElementById('g-pre').value) || 0;
-            const env = parseFloat(document.getElementById('g-env').value) || 0;
-            if(!nom) return;
-            await addDoc(collection(db, "compras"), { uid: userUID, nom, total: pre + env, fecha: new Date().toLocaleDateString() });
+            const total = (parseFloat(document.getElementById('g-pre').value) || 0) + (parseFloat(document.getElementById('g-env').value) || 0);
+            if(!nom || total <= 0) return;
+            await addDoc(collection(db, "compras"), { uid: userUID, nom, total, fecha: new Date().toLocaleDateString() });
             document.getElementById('g-nom').value = ""; document.getElementById('g-pre').value = ""; document.getElementById('g-env').value = "";
         };
 
@@ -167,7 +177,7 @@
             const nom = document.getElementById('v-nom').value;
             const pre = parseFloat(document.getElementById('v-pre').value) || 0;
             const vin = document.getElementById('v-vin').value;
-            if(!nom) return;
+            if(!nom || pre <= 0) return;
             await addDoc(collection(db, "ventas"), { uid: userUID, nom, pre, vin, fecha: new Date().toLocaleDateString() });
             document.getElementById('v-nom').value = ""; document.getElementById('v-pre').value = "";
         };
@@ -177,40 +187,11 @@
         };
 
         window.exportarData = () => {
-            const blob = new Blob([JSON.stringify(dataLocal, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = `backup_vrixo_${new Date().toLocaleDateString()}.json`;
-            a.click();
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(dataLocal, null, 2)], {type: 'application/json'}));
+            a.download = 'backup_vrixo.json'; a.click();
         };
 
-        function actualizarTabla() {
+        function actualizarUI() {
             const { compras, ventas } = dataLocal;
-            const cuerpo = document.getElementById('cuerpo');
-            const select = document.getElementById('v-vin');
-            cuerpo.innerHTML = "";
-            select.innerHTML = '<option value="suelto">Suelto</option>';
-            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
-
-            let tG = 0, tV = 0;
-            compras.forEach(c => {
-                tG += c.total;
-                const rec = ventas.filter(v => v.vin === c.id).reduce((s, x) => s + x.pre, 0);
-                const mg = rec - c.total;
-                cuerpo.innerHTML += `<tr class="row-lote"><td>${c.fecha}</td><td>📦 ${c.nom}</td><td style="color:red">-${c.total.toFixed(2)}€</td><td>Rec: ${rec.toFixed(2)}€</td><td style="color:${mg>=0?'green':'red'}">${mg.toFixed(2)}€</td><td style="text-align:right"><span onclick="borrarReg('c','${c.id}')" style="cursor:pointer; color:red">✕</span></td></tr>`;
-            });
-            ventas.forEach(v => {
-                tV += v.pre;
-                if(v.vin === 'suelto') {
-                    cuerpo.innerHTML += `<tr><td>${v.fecha}</td><td>💰 ${v.nom}</td><td>---</td><td style="color:green">+${v.pre.toFixed(2)}€</td><td>---</td><td style="text-align:right"><span onclick="borrarReg('v','${v.id}')" style="cursor:pointer; color:red">✕</span></td></tr>`;
-                }
-            });
-            document.getElementById('t-gastos').innerText = tG.toFixed(2) + "€";
-            document.getElementById('t-ventas').innerText = tV.toFixed(2) + "€";
-            const neto = tV - tG;
-            document.getElementById('t-neto').innerText = neto.toFixed(2) + "€";
-            document.getElementById('t-neto').style.color = neto >= 0 ? "#4ade80" : "#f87171";
-        }
-    </script>
-</body>
-</html>
+            const cuerpo = document.getElementById
