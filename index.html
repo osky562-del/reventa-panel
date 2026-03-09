@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VRIXO | Panel Final</title>
+    <title>VRIXO | Cloud Panel</title>
     <style>
         :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --dark: #1e293b; --bg: #f1f5f9; --max-width: 1100px; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; align-items: center; color: #334155; }
@@ -22,7 +22,6 @@
         button { cursor: pointer; font-weight: bold; border: none; background: var(--primary); color: white; }
         .btn-compra { background: var(--dark); }
         .btn-venta { background: var(--success); }
-        .btn-rescate { background: #f59e0b; font-size: 0.7rem; width: auto; padding: 8px 12px; }
         .btn-backup { background: #64748b; font-size: 0.7rem; width: auto; padding: 8px 12px; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
         th { background: #f8fafc; padding: 12px; text-align: left; color: #64748b; font-size: 0.8rem; }
@@ -32,7 +31,6 @@
     </style>
 </head>
 <body>
-
     <div id="login-screen">
         <div class="login-card">
             <h1>VRIXO</h1>
@@ -41,14 +39,12 @@
             <button id="btn-entrar">Entrar</button>
         </div>
     </div>
-
     <div id="app-content">
         <header>
             <div class="container">
                 <div class="header-top">
                     <h2 style="margin:0">🚀 Vrixo Cloud</h2>
                     <div style="display:flex; gap:8px;">
-                        <button class="btn-rescate" id="btn-rescate">⚠️ Rescatar Datos</button>
                         <button class="btn-backup" id="btn-backup">💾 Backup</button>
                         <button id="btn-salir" style="background:none; color:#94a3b8; width:auto; text-decoration:underline">Salir</button>
                     </div>
@@ -60,7 +56,6 @@
                 </div>
             </div>
         </header>
-
         <div class="container">
             <div class="grid-forms">
                 <section class="card">
@@ -86,15 +81,14 @@
             </div>
         </div>
     </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBphY_jaOOOVOzwzfoXE78_iDVOQYRhA2o",
-            authDomain: "control-de-gastos-39154.firebaseapp.com",
+            authDomain: "control-de-gast-39154.firebaseapp.com",
             projectId: "control-de-gastos-39154",
             storageBucket: "control-de-gastos-39154.firebasestorage.app",
             messagingSenderId: "845236944662",
@@ -107,30 +101,10 @@
         let userUID = null;
         let dataLocal = { compras: [], ventas: [] };
 
-        // BOTONES (Escuchadores de eventos para evitar el error "not defined")
         document.getElementById('btn-entrar').addEventListener('click', () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('pass').value;
-            signInWithEmailAndPassword(auth, email, pass).catch(e => alert("Error: " + e.message));
+            signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value).catch(e => alert("Error"));
         });
-
         document.getElementById('btn-salir').addEventListener('click', () => signOut(auth));
-
-        document.getElementById('btn-rescate').addEventListener('click', async () => {
-            if(!confirm("¿Rescatar datos antiguos?")) return;
-            try {
-                const colls = ["compras", "ventas"];
-                for (let c of colls) {
-                    const snap = await getDocs(collection(db, c));
-                    for (let d of snap.docs) {
-                        if(!d.data().uid) await updateDoc(doc(db, c, d.id), { uid: userUID });
-                    }
-                }
-                alert("Hecho. Recarga la página.");
-                location.reload();
-            } catch (e) { alert("Error: " + e.message + ". ¿Pusiste las reglas en true?"); }
-        });
-
         document.getElementById('btn-add-compra').addEventListener('click', async () => {
             const nom = document.getElementById('g-nom').value;
             const pre = parseFloat(document.getElementById('g-pre').value) || 0;
@@ -139,76 +113,58 @@
             await addDoc(collection(db, "compras"), { uid: userUID, nom, total: pre+env, fecha: new Date().toLocaleDateString() });
             document.getElementById('g-nom').value = ""; document.getElementById('g-pre').value = ""; document.getElementById('g-env').value = "";
         });
-
         document.getElementById('btn-add-venta').addEventListener('click', async () => {
             const nom = document.getElementById('v-nom').value;
             const pre = parseFloat(document.getElementById('v-pre').value) || 0;
-            const vin = document.getElementById('v-vin').value;
             if(!nom) return;
-            await addDoc(collection(db, "ventas"), { uid: userUID, nom, pre, vin, fecha: new Date().toLocaleDateString() });
+            await addDoc(collection(db, "ventas"), { uid: userUID, nom, pre, vin: document.getElementById('v-vin').value, fecha: new Date().toLocaleDateString() });
             document.getElementById('v-nom').value = ""; document.getElementById('v-pre').value = "";
         });
-
         document.getElementById('btn-backup').addEventListener('click', () => {
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([JSON.stringify(dataLocal, null, 2)], {type: 'application/json'}));
             a.download = 'backup.json'; a.click();
         });
-
-        // BORRADO (Global para que funcione el onclick en la tabla)
         window.borrarReg = async (tipo, id) => {
             if(confirm("¿Borrar?")) await deleteDoc(doc(db, tipo === 'c' ? "compras" : "ventas", id));
         };
-
-        // AUTH STATE
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 userUID = user.uid;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-content').style.display = 'block';
-                iniciarSincro();
+                onSnapshot(query(collection(db, "compras"), where("uid", "==", userUID)), (s1) => {
+                    dataLocal.compras = s1.docs.map(d => ({id: d.id, ...d.data()}));
+                    onSnapshot(query(collection(db, "ventas"), where("uid", "==", userUID)), (s2) => {
+                        dataLocal.ventas = s2.docs.map(d => ({id: d.id, ...d.data()}));
+                        actualizarUI();
+                    });
+                });
             } else {
                 document.getElementById('login-screen').style.display = 'flex';
                 document.getElementById('app-content').style.display = 'none';
             }
         });
-
-        function iniciarSincro() {
-            onSnapshot(query(collection(db, "compras"), where("uid", "==", userUID)), (s1) => {
-                dataLocal.compras = s1.docs.map(d => ({id: d.id, ...d.data()}));
-                onSnapshot(query(collection(db, "ventas"), where("uid", "==", userUID)), (s2) => {
-                    dataLocal.ventas = s2.docs.map(d => ({id: d.id, ...d.data()}));
-                    actualizarUI();
-                });
-            });
-        }
-
         function actualizarUI() {
             const { compras, ventas } = dataLocal;
             const cuerpo = document.getElementById('cuerpo');
             const select = document.getElementById('v-vin');
             cuerpo.innerHTML = "";
             select.innerHTML = '<option value="suelto">Suelto</option>';
-            compras.forEach(c => select.innerHTML += `<option value="${c.id}">${c.nom}</option>`);
-
-            let tG = 0, tV = 0;
             compras.forEach(c => {
-                tG += c.total;
-                const rec = ventas.filter(v => v.vin === c.id).reduce((s, x) => s + x.pre, 0);
-                const mg = rec - c.total;
-                cuerpo.innerHTML += `<tr class="row-lote"><td>${c.fecha}</td><td>📦 ${c.nom}</td><td style="color:red">-${c.total.toFixed(2)}€</td><td>Rec: ${rec.toFixed(2)}€</td><td style="color:${mg>=0?'green':'red'}">${mg.toFixed(2)}€</td><td style="text-align:right"><span onclick="borrarReg('c','${c.id}')" style="cursor:pointer;color:red">✕</span></td></tr>`;
+                select.innerHTML += `<option value="${c.id}">${c.nom}</option>`;
+                let rec = ventas.filter(v => v.vin === c.id).reduce((s, x) => s + x.pre, 0);
+                cuerpo.innerHTML += `<tr class="row-lote"><td>${c.fecha}</td><td>📦 ${c.nom}</td><td style="color:red">-${c.total.toFixed(2)}€</td><td>Rec: ${rec.toFixed(2)}€</td><td style="color:${(rec-c.total)>=0?'green':'red'}">${(rec-c.total).toFixed(2)}€</td><td style="text-align:right"><span onclick="borrarReg('c','${c.id}')" style="cursor:pointer;color:red">✕</span></td></tr>`;
             });
-            ventas.forEach(v => {
-                tV += v.pre;
-                if(v.vin === 'suelto') {
-                    cuerpo.innerHTML += `<tr><td>${v.fecha}</td><td>💰 ${v.nom}</td><td>---</td><td style="color:green">+${v.pre.toFixed(2)}€</td><td>---</td><td style="text-align:right"><span onclick="borrarReg('v','${v.id}')" style="cursor:pointer;color:red">✕</span></td></tr>`;
-                }
+            ventas.filter(v => v.vin === 'suelto').forEach(v => {
+                cuerpo.innerHTML += `<tr><td>${v.fecha}</td><td>💰 ${v.nom}</td><td>---</td><td style="color:green">+${v.pre.toFixed(2)}€</td><td>---</td><td style="text-align:right"><span onclick="borrarReg('v','${v.id}')" style="cursor:pointer;color:red">✕</span></td></tr>`;
             });
+            let tG = compras.reduce((s, c) => s + c.total, 0);
+            let tV = ventas.reduce((s, v) => s + v.pre, 0);
             document.getElementById('t-gastos').innerText = tG.toFixed(2) + "€";
             document.getElementById('t-ventas').innerText = tV.toFixed(2) + "€";
-            const neto = tV - tG;
-            document.getElementById('t-neto').innerText = neto.toFixed(2) + "€";
-            document.getElementById('t-neto').style.color = neto >= 0 ? "green" : "red";
+            document.getElementById('t-neto').innerText = (tV - tG).toFixed(2) + "€";
+            document.getElementById('t-neto').style.color = (tV - tG) >= 0 ? "green" : "red";
         }
     </script>
 </body>
