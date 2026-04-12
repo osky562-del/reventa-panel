@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VRIXO | Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -11,186 +13,256 @@
         :root {
             --primary: #6366f1;
             --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-glow: rgba(99,102,241,0.15);
             --success: #10b981;
+            --success-light: #34d399;
             --danger: #ef4444;
             --warning: #f59e0b;
-            --dark: #0f172a;
-            --dark2: #1e293b;
-            --dark3: #334155;
+            --dark: #0a0e1a;
+            --dark2: #131825;
+            --dark3: #1e2435;
+            --dark4: #2a3146;
             --muted: #64748b;
+            --muted-light: #94a3b8;
             --border: #e2e8f0;
-            --bg: #f8fafc;
+            --border-light: #f1f5f9;
+            --bg: #f1f5f9;
+            --bg-card: #ffffff;
             --white: #ffffff;
-            --radius: 14px;
-            --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.06);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 6px 16px rgba(0,0,0,0.04);
+            --shadow-lg: 0 4px 12px rgba(0,0,0,0.08), 0 20px 40px rgba(0,0,0,0.06);
+            --transition: .2s cubic-bezier(.4,0,.2,1);
         }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--dark3); min-height: 100vh; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: #334155; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         /* ── TOAST ── */
-        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
-        .toast { background: var(--dark2); color: white; padding: 12px 18px; border-radius: 10px; font-size: 0.875rem; font-weight: 500;
-            display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            animation: slideIn .25s ease; min-width: 220px; }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--dark2); color: white; padding: 14px 20px; border-radius: 12px; font-size: 0.85rem; font-weight: 500;
+            display: flex; align-items: center; gap: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+            animation: slideIn .3s cubic-bezier(.4,0,.2,1); min-width: 240px; backdrop-filter: blur(12px); }
         .toast.success { border-left: 4px solid var(--success); }
         .toast.error   { border-left: 4px solid var(--danger); }
         .toast.info    { border-left: 4px solid var(--primary); }
-        @keyframes slideIn { from { transform: translateX(120%); opacity:0; } to { transform: translateX(0); opacity:1; } }
-        @keyframes fadeOut { to { opacity:0; transform: translateX(120%); } }
+        @keyframes slideIn { from { transform: translateX(120%) scale(0.9); opacity:0; } to { transform: translateX(0) scale(1); opacity:1; } }
+        @keyframes fadeOut { to { opacity:0; transform: translateX(120%) scale(0.9); } }
 
         /* ── LOGIN ── */
         #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh;
-            background: linear-gradient(135deg, var(--dark) 0%, var(--dark2) 100%); }
-        .login-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1); padding: 44px 40px; border-radius: 24px;
-            width: 360px; text-align: center; box-shadow: 0 24px 64px rgba(0,0,0,0.4); }
-        .login-logo { font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; color: white; margin-bottom: 6px; }
-        .login-logo span { color: var(--primary); }
-        .login-sub { color: #94a3b8; font-size: 0.875rem; margin-bottom: 28px; }
-        .login-card input { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
-            color: white; padding: 13px 16px; border-radius: 10px; width: 100%; margin-bottom: 12px;
-            font-size: 0.95rem; outline: none; transition: border .2s; }
-        .login-card input::placeholder { color: #64748b; }
-        .login-card input:focus { border-color: var(--primary); }
-        .login-card button { width: 100%; padding: 13px; border-radius: 10px; border: none;
-            background: var(--primary); color: white; font-weight: 700; font-size: 1rem;
-            cursor: pointer; transition: background .2s, transform .1s; margin-top: 4px; }
-        .login-card button:hover { background: var(--primary-dark); }
-        .login-card button:active { transform: scale(0.98); }
+            background: var(--dark); overflow: hidden; position: relative; }
+        #login-screen::before { content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse 600px 400px at 30% 20%, rgba(99,102,241,0.15), transparent),
+                        radial-gradient(ellipse 500px 350px at 70% 80%, rgba(16,185,129,0.1), transparent),
+                        radial-gradient(ellipse 400px 300px at 50% 50%, rgba(99,102,241,0.05), transparent);
+            animation: bgPulse 8s ease-in-out infinite alternate; }
+        @keyframes bgPulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+        .login-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.08); padding: 48px 44px; border-radius: 28px;
+            width: 380px; text-align: center; box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+            position: relative; z-index: 1; }
+        .login-logo { font-size: 2.6rem; font-weight: 900; letter-spacing: -2px; color: white; margin-bottom: 4px; }
+        .login-logo span { background: linear-gradient(135deg, var(--primary), var(--primary-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .login-sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 32px; font-weight: 400; letter-spacing: 0.02em; }
+        .login-card input { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.08);
+            color: white; padding: 14px 18px; border-radius: 12px; width: 100%; margin-bottom: 14px;
+            font-size: 0.9rem; font-family: inherit; outline: none; transition: all var(--transition); }
+        .login-card input::placeholder { color: #4a5568; }
+        .login-card input:focus { border-color: var(--primary); background: rgba(99,102,241,0.06); box-shadow: 0 0 0 3px var(--primary-glow); }
+        .login-card button { width: 100%; padding: 14px; border-radius: 12px; border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; font-weight: 700; font-size: 0.95rem;
+            cursor: pointer; transition: all var(--transition); margin-top: 6px; font-family: inherit; letter-spacing: 0.02em; }
+        .login-card button:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
+        .login-card button:active { transform: scale(0.98) translateY(0); }
 
         /* ── APP ── */
         #app-content { display: none; }
 
         /* ── HEADER ── */
         header { background: var(--dark); color: white; padding: 0; position: sticky; top: 0; z-index: 100;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.2); }
-        .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px;
-            display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
-        .brand { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; white-space: nowrap; }
-        .brand span { color: var(--primary); }
-        .header-actions { display: flex; align-items: center; gap: 8px; }
-        .btn-header { display: flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 8px;
-            border: none; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: white; transition: all .2s; white-space: nowrap; }
-        .btn-header:hover { filter: brightness(1.15); }
-        .btn-header.slate  { background: #334155; }
-        .btn-header.teal   { background: #0d9488; }
-        .btn-header.violet { background: #7c3aed; }
-        .btn-header.ghost  { background: transparent; color: #94a3b8; text-decoration: underline; font-size: 0.8rem; border: none; cursor: pointer; }
+            box-shadow: 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .header-inner { max-width: 1280px; margin: 0 auto; padding: 0 28px;
+            display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
+        .brand { font-size: 1.4rem; font-weight: 900; letter-spacing: -1px; white-space: nowrap; }
+        .brand span { background: linear-gradient(135deg, var(--primary), var(--primary-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-actions { display: flex; align-items: center; gap: 6px; }
+        .btn-header { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm);
+            border: 1px solid rgba(255,255,255,0.08); cursor: pointer; font-size: 0.78rem; font-weight: 600;
+            color: #cbd5e1; transition: all var(--transition); white-space: nowrap; font-family: inherit; background: rgba(255,255,255,0.04); }
+        .btn-header:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); color: white; transform: translateY(-1px); }
+        .btn-header.ghost { background: transparent; border: none; color: var(--muted); font-size: 0.78rem; }
+        .btn-header.ghost:hover { color: var(--danger); }
 
         /* ── STATS BAR ── */
-        .stats-bar { background: var(--dark2); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .stats-inner { max-width: 1200px; margin: 0 auto; padding: 16px 24px;
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .stat { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07);
-            padding: 14px 18px; border-radius: 12px; }
-        .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; margin-bottom: 4px; }
-        .stat-value { font-size: 1.4rem; font-weight: 700; color: white; }
+        .stats-bar { background: var(--dark2); border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .stats-inner { max-width: 1280px; margin: 0 auto; padding: 20px 28px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .stat { background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 20px 22px; border-radius: 14px; position: relative; overflow: hidden; transition: all var(--transition); }
+        .stat:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-2px); }
+        .stat::after { content: ''; position: absolute; top: 0; right: 0; width: 60px; height: 60px; border-radius: 50%;
+            filter: blur(30px); opacity: 0.15; pointer-events: none; }
+        .stat:nth-child(1)::after { background: var(--danger); }
+        .stat:nth-child(2)::after { background: var(--success); }
+        .stat:nth-child(3)::after { background: var(--primary); }
+        .stat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+        .stat-value { font-size: 1.6rem; font-weight: 800; color: white; letter-spacing: -0.5px; }
 
         /* ── MAIN ── */
-        .main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+        .main { max-width: 1280px; margin: 0 auto; padding: 28px; }
 
         /* ── FORMS GRID ── */
         .forms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-        .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
-        .card-title { font-size: 0.95rem; font-weight: 700; color: var(--dark2); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-        .card-title .icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
-        .icon-compra { background: #fef3c7; }
-        .icon-venta  { background: #d1fae5; }
-        .icon-fiscal { background: #ede9fe; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;
+            box-shadow: var(--shadow); transition: all var(--transition); }
+        .card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+        .card-title { font-size: 0.9rem; font-weight: 700; color: var(--dark3); margin-bottom: 20px;
+            display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--border-light); }
+        .card-title .icon { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.95rem; }
+        .icon-compra { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+        .icon-venta  { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+        .icon-fiscal { background: linear-gradient(135deg, #ede9fe, #ddd6fe); }
 
-        .form-field { margin-bottom: 10px; }
-        .form-field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
+        .form-field { margin-bottom: 12px; }
+        .form-field label { display: block; font-size: 0.7rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
         .form-field input, .form-field select {
-            width: 100%; padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 9px;
-            font-size: 0.9rem; color: var(--dark3); background: white; outline: none; transition: border .2s; }
-        .form-field input:focus, .form-field select:focus { border-color: var(--primary); }
+            width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+            font-size: 0.88rem; color: #1e293b; background: var(--white); outline: none;
+            transition: all var(--transition); font-family: inherit; }
+        .form-field input:focus, .form-field select:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
         .form-field input::placeholder { color: #cbd5e1; }
+        .form-field select { cursor: pointer; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
 
-        .btn { width: 100%; padding: 11px; border-radius: 9px; border: none; cursor: pointer;
-            font-weight: 700; font-size: 0.9rem; color: white; transition: all .2s; margin-top: 4px; }
+        .btn { width: 100%; padding: 12px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+            font-weight: 700; font-size: 0.88rem; color: white; transition: all var(--transition);
+            margin-top: 8px; font-family: inherit; letter-spacing: 0.02em; }
+        .btn:hover { transform: translateY(-1px); }
         .btn:active { transform: scale(0.98); }
-        .btn-compra { background: linear-gradient(135deg, #1e293b, #334155); }
-        .btn-compra:hover { background: linear-gradient(135deg, #334155, #475569); }
-        .btn-venta  { background: linear-gradient(135deg, #059669, #10b981); }
-        .btn-venta:hover  { background: linear-gradient(135deg, #10b981, #34d399); }
+        .btn-compra { background: linear-gradient(135deg, #1e293b, #334155); box-shadow: 0 4px 12px rgba(30,41,59,0.3); }
+        .btn-compra:hover { box-shadow: 0 6px 20px rgba(30,41,59,0.4); }
+        .btn-venta  { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+        .btn-venta:hover  { box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
 
         /* ── FISCAL ── */
-        .fiscal-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 12px; }
+        .card-fiscal { margin-bottom: 24px; }
+        .fiscal-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 14px; }
         .fiscal-row .form-field { margin-bottom: 0; }
-        .btn-apply { padding: 10px 16px; border-radius: 9px; border: none; cursor: pointer;
-            background: var(--dark3); color: white; font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
-        .btn-apply:hover { background: var(--dark2); }
-        .export-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 10px; }
-        .btn-export { padding: 9px 14px; border-radius: 8px; border: none; cursor: pointer;
-            font-weight: 600; font-size: 0.8rem; color: white; transition: filter .2s; }
-        .btn-export:hover { filter: brightness(1.12); }
-        .fiscal-summary { margin-top: 12px; padding: 10px 14px; background: var(--bg); border-radius: 9px;
-            font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+        .btn-apply { padding: 11px 20px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+            background: linear-gradient(135deg, var(--dark3), var(--dark4)); color: white; font-weight: 700;
+            font-size: 0.82rem; white-space: nowrap; font-family: inherit; transition: all var(--transition); }
+        .btn-apply:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .export-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 12px; }
+        .btn-export { padding: 10px 16px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+            font-weight: 600; font-size: 0.78rem; color: white; transition: all var(--transition); font-family: inherit; }
+        .btn-export:hover { transform: translateY(-1px); filter: brightness(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .fiscal-summary { margin-top: 14px; padding: 14px 18px; background: var(--bg); border-radius: var(--radius-sm);
+            font-size: 0.8rem; color: var(--muted); line-height: 1.7; border: 1px solid var(--border-light); }
 
         /* ── TABLE ── */
-        .table-wrap { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-        .table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        .table-title { font-size: 0.9rem; font-weight: 700; color: var(--dark2); }
-        .table-count { font-size: 0.75rem; color: var(--muted); background: var(--bg); padding: 3px 10px; border-radius: 20px; }
+        .table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            box-shadow: var(--shadow); overflow: hidden; }
+        .table-header { padding: 18px 22px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; }
+        .table-title { font-size: 0.95rem; font-weight: 700; color: #0f172a; letter-spacing: -0.3px; }
+        .table-count { font-size: 0.72rem; font-weight: 600; color: var(--muted); background: var(--bg);
+            padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border-light); }
         .table-scroll { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
-        thead th { background: #f8fafc; padding: 11px 16px; text-align: left; color: var(--muted);
-            font-size: 0.7rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
-            border-bottom: 1px solid var(--border); white-space: nowrap; }
-        tbody td { padding: 11px 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
+        thead th { background: #f8fafc; padding: 12px 18px; text-align: left; color: var(--muted);
+            font-size: 0.68rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
+            border-bottom: 2px solid var(--border); white-space: nowrap; }
+        tbody td { padding: 13px 18px; border-bottom: 1px solid var(--border-light); font-size: 0.85rem; }
         tbody tr:last-child td { border-bottom: none; }
-        tbody tr:hover { background: #fafafa; }
+        tbody tr { transition: background var(--transition); }
+        tbody tr:hover { background: #fafbfd; }
 
-        .row-lote { background: #fffbeb !important; }
-        .row-lote:hover { background: #fef9c3 !important; }
+        .row-lote { background: #fffdf5 !important; }
+        .row-lote:hover { background: #fffbeb !important; }
         .row-lote td:first-child { border-left: 3px solid var(--warning); }
-        .row-suelta { background: #f0fdf4 !important; }
-        .row-suelta:hover { background: #dcfce7 !important; }
+        .row-suelta { background: #f7fdf9 !important; }
+        .row-suelta:hover { background: #f0fdf4 !important; }
+        .row-suelta td:first-child { border-left: 3px solid var(--success); }
 
-        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
-        .badge-lote     { background: #fef3c7; color: #92400e; }
-        .badge-venta    { background: #d1fae5; color: #065f46; }
-        .badge-suelta   { background: #e0f2fe; color: #0369a1; }
-        .badge-win      { background: #dcfce7; color: #166534; }
-        .badge-loss     { background: #fee2e2; color: #991b1b; }
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 600; letter-spacing: 0.01em; border: 1px solid transparent; }
+        .badge-lote     { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+        .badge-venta    { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+        .badge-suelta   { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+        .badge-win      { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+        .badge-loss     { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
 
         /* Canales */
-        .badge-wallapop { background: #e8f5e9; color: #2e7d32; }
-        .badge-vinted   { background: #e3f2fd; color: #1565c0; }
-        .badge-persona  { background: #fff3e0; color: #e65100; }
+        .badge-wallapop { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .badge-vinted   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .badge-persona  { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
 
         /* Estados */
-        .badge-estado   { cursor: pointer; transition: all .15s; }
-        .badge-estado:hover { filter: brightness(0.92); transform: scale(1.05); }
-        .badge-pendiente  { background: #fef3c7; color: #92400e; }
-        .badge-enviado    { background: #dbeafe; color: #1e40af; }
-        .badge-entregado  { background: #e0e7ff; color: #3730a3; }
-        .badge-cobrado    { background: #dcfce7; color: #166534; }
+        .badge-estado   { cursor: pointer; transition: all .15s; user-select: none; }
+        .badge-estado:hover { transform: scale(1.08); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .badge-pendiente  { background: #fefce8; color: #854d0e; border-color: #fde047; }
+        .badge-enviado    { background: #eff6ff; color: #1e40af; border-color: #93c5fd; }
+        .badge-entregado  { background: #eef2ff; color: #4338ca; border-color: #a5b4fc; }
+        .badge-cobrado    { background: #f0fdf4; color: #166534; border-color: #86efac; }
 
-        .indent-cell { padding-left: 32px !important; color: var(--muted); }
-        .amount-neg { color: var(--danger); font-weight: 600; }
-        .amount-pos { color: var(--success); font-weight: 600; }
+        .indent-cell { padding-left: 36px !important; color: var(--muted); }
+        .amount-neg { color: var(--danger); font-weight: 700; font-variant-numeric: tabular-nums; }
+        .amount-pos { color: var(--success); font-weight: 700; font-variant-numeric: tabular-nums; }
 
-        .btn-del { background: none; border: none; cursor: pointer; color: #cbd5e1; padding: 4px 6px;
-            border-radius: 6px; transition: all .15s; font-size: 0.85rem; }
-        .btn-del:hover { color: var(--danger); background: #fee2e2; }
+        .btn-del { background: none; border: 1px solid transparent; cursor: pointer; color: #d1d5db; padding: 5px 7px;
+            border-radius: 8px; transition: all .15s; font-size: 0.8rem; }
+        .btn-del:hover { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
 
-        .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
-        .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .empty-state { text-align: center; padding: 56px 20px; color: var(--muted); }
+        .empty-state .empty-icon { font-size: 2.8rem; margin-bottom: 14px; opacity: 0.7; }
+        .empty-state div:last-child { font-weight: 500; }
 
         .row-lote td.td-toggle { cursor: pointer; user-select: none; }
         .toggle-icon { display: inline-flex; align-items: center; justify-content: center;
-            width: 20px; height: 20px; border-radius: 5px; background: rgba(245,158,11,0.15);
-            color: #92400e; font-size: 0.7rem; margin-right: 6px; transition: transform .2s; }
+            width: 22px; height: 22px; border-radius: 6px; background: rgba(245,158,11,0.12);
+            color: #92400e; font-size: 0.65rem; margin-right: 8px; transition: transform .2s; border: 1px solid rgba(245,158,11,0.2); }
         .toggle-icon.open { transform: rotate(90deg); }
-        .row-venta { transition: opacity .15s; }
+        .row-venta { transition: all .15s; }
         .row-venta.hidden { display: none; }
 
+        /* ── FOOTER ── */
+        .footer { text-align: center; padding: 24px 16px 32px; }
+        .footer-inner { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: #b0b8c8;
+            letter-spacing: .06em; background: var(--white); padding: 8px 20px; border-radius: 20px;
+            border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); }
+        .footer-inner strong { color: var(--primary); font-weight: 800; }
+
+        /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
             .forms-grid { grid-template-columns: 1fr; }
             .stats-inner { grid-template-columns: 1fr; }
             .fiscal-row { grid-template-columns: 1fr 1fr; }
             .fiscal-row > :last-child { grid-column: 1 / -1; }
             .header-actions .btn-header span { display: none; }
+            .main { padding: 20px 16px; }
+            .header-inner { padding: 0 16px; }
+            .stats-inner { padding: 16px; }
+            .stat-value { font-size: 1.3rem; }
+            .card { padding: 20px; }
+        }
+        @media (max-width: 480px) {
+            .export-btns { grid-template-columns: 1fr 1fr; }
+            .brand { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -202,10 +274,10 @@
 <div id="login-screen">
     <div class="login-card">
         <div class="login-logo">VRI<span>XO</span></div>
-        <div class="login-sub">Panel de control de proyectos</div>
+        <div class="login-sub">Panel de control de reventa</div>
         <input type="email" id="email" placeholder="Email">
-        <input type="password" id="pass" placeholder="Contraseña">
-        <button id="btn-entrar">Entrar →</button>
+        <input type="password" id="pass" placeholder="Contrasena">
+        <button id="btn-entrar">Entrar</button>
     </div>
 </div>
 
@@ -216,10 +288,10 @@
         <div class="header-inner">
             <div class="brand">VRI<span>XO</span></div>
             <div class="header-actions">
-                <button class="btn-header slate" onclick="location.reload()">🔄 <span>Refrescar</span></button>
-                <button class="btn-header teal" id="btn-backup">💾 <span>Backup</span></button>
-                <button class="btn-header violet" id="btn-restaurar">📥 <span>Restaurar</span></button>
-                <button class="btn-header ghost" id="btn-salir">Salir</button>
+                <button class="btn-header" onclick="location.reload()">&#x21bb; <span>Refrescar</span></button>
+                <button class="btn-header" id="btn-backup">&#x2193; <span>Backup</span></button>
+                <button class="btn-header" id="btn-restaurar">&#x2191; <span>Restaurar</span></button>
+                <button class="btn-header ghost" id="btn-salir">Cerrar sesion</button>
             </div>
         </div>
     </header>
@@ -227,16 +299,16 @@
     <div class="stats-bar">
         <div class="stats-inner">
             <div class="stat">
-                <div class="stat-label">Inversión total</div>
-                <div class="stat-value" id="t-gastos">0.00€</div>
+                <div class="stat-label">Inversion total</div>
+                <div class="stat-value" id="t-gastos">0.00&#8364;</div>
             </div>
             <div class="stat">
                 <div class="stat-label">Ventas totales</div>
-                <div class="stat-value" id="t-ventas">0.00€</div>
+                <div class="stat-value" id="t-ventas">0.00&#8364;</div>
             </div>
             <div class="stat">
-                <div class="stat-label">Neto</div>
-                <div class="stat-value" id="t-neto">0.00€</div>
+                <div class="stat-label">Beneficio neto</div>
+                <div class="stat-value" id="t-neto">0.00&#8364;</div>
             </div>
         </div>
     </div>
@@ -246,16 +318,16 @@
         <!-- FORMULARIOS -->
         <div class="forms-grid">
             <div class="card">
-                <div class="card-title"><span class="icon icon-compra">📦</span> Registrar Compra</div>
+                <div class="card-title"><span class="icon icon-compra">&#x1F4E6;</span> Registrar Compra</div>
                 <div class="form-field"><label>Nombre del lote</label><input type="text" id="g-nom" placeholder="Ej: Lote zapatillas junio"></div>
-                <div class="form-field"><label>Precio compra (€)</label><input type="number" id="g-pre" placeholder="0.00" step="0.01"></div>
-                <div class="form-field"><label>Gasto envío (€)</label><input type="number" id="g-env" placeholder="0.00" step="0.01"></div>
+                <div class="form-field"><label>Precio compra (&euro;)</label><input type="number" id="g-pre" placeholder="0.00" step="0.01"></div>
+                <div class="form-field"><label>Gasto envio (&euro;)</label><input type="number" id="g-env" placeholder="0.00" step="0.01"></div>
                 <button class="btn btn-compra" id="btn-add-compra">Guardar Lote</button>
             </div>
             <div class="card">
-                <div class="card-title"><span class="icon icon-venta">💰</span> Registrar Venta</div>
-                <div class="form-field"><label>Artículo vendido</label><input type="text" id="v-nom" placeholder="Ej: Nike Air Max talla 42"></div>
-                <div class="form-field"><label>Precio venta (€)</label><input type="number" id="v-pre" placeholder="0.00" step="0.01"></div>
+                <div class="card-title"><span class="icon icon-venta">&#x1F4B0;</span> Registrar Venta</div>
+                <div class="form-field"><label>Articulo vendido</label><input type="text" id="v-nom" placeholder="Ej: Nike Air Max talla 42"></div>
+                <div class="form-field"><label>Precio venta (&euro;)</label><input type="number" id="v-pre" placeholder="0.00" step="0.01"></div>
                 <div class="form-field"><label>Vincular a lote</label><select id="v-vin"><option value="suelto">Venta suelta (sin lote)</option></select></div>
                 <div class="form-field"><label>Canal de venta</label><select id="v-canal">
                     <option value="wallapop">Wallapop</option>
@@ -267,20 +339,20 @@
         </div>
 
         <!-- FISCAL -->
-        <div class="card" style="margin-bottom:24px;">
-            <div class="card-title"><span class="icon icon-fiscal">🧾</span> Exportación Fiscal</div>
+        <div class="card card-fiscal">
+            <div class="card-title"><span class="icon icon-fiscal">&#x1F9FE;</span> Exportacion Fiscal</div>
             <div class="fiscal-row">
                 <div class="form-field"><label>Desde</label><input type="date" id="f-desde"></div>
                 <div class="form-field"><label>Hasta</label><input type="date" id="f-hasta"></div>
                 <button class="btn-apply" id="btn-aplicar-filtro">Aplicar rango</button>
             </div>
             <div class="export-btns">
-                <button class="btn-export" id="btn-exp-mov"     style="background:#0d9488;">📊 Movimientos CSV</button>
-                <button class="btn-export" id="btn-exp-compras" style="background:#1d4ed8;">📦 Compras CSV</button>
-                <button class="btn-export" id="btn-exp-ventas"  style="background:#059669;">💰 Ventas CSV</button>
-                <button class="btn-export" id="btn-exp-borrados" style="background:#9f1239;">🗑 Borrados CSV</button>
-                <button class="btn-export" id="btn-exp-json"    style="background:#6d28d9;">📁 JSON Fiscal</button>
-                <button class="btn-export" id="btn-exp-pdf"     style="background:#b91c1c;">📄 Informe PDF</button>
+                <button class="btn-export" id="btn-exp-mov"     style="background:linear-gradient(135deg,#0d9488,#14b8a6);">Movimientos CSV</button>
+                <button class="btn-export" id="btn-exp-compras" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);">Compras CSV</button>
+                <button class="btn-export" id="btn-exp-ventas"  style="background:linear-gradient(135deg,#059669,#10b981);">Ventas CSV</button>
+                <button class="btn-export" id="btn-exp-borrados" style="background:linear-gradient(135deg,#9f1239,#e11d48);">Borrados CSV</button>
+                <button class="btn-export" id="btn-exp-json"    style="background:linear-gradient(135deg,#6d28d9,#8b5cf6);">JSON Fiscal</button>
+                <button class="btn-export" id="btn-exp-pdf"     style="background:linear-gradient(135deg,#b91c1c,#ef4444);">Informe PDF</button>
             </div>
             <div id="fiscal-info" class="fiscal-summary">Sin datos para exportar.</div>
         </div>
@@ -309,8 +381,9 @@
             </div>
         </div>
 
-        <div style="height:40px"></div>
-        <div style="text-align:center;padding:16px;font-size:0.75rem;color:#94a3b8;letter-spacing:.08em;">by <strong style="color:#6366f1">OSKY</strong></div>
+        <div class="footer">
+            <div class="footer-inner">by <strong>OSKY</strong></div>
+        </div>
     </div>
 </div>
 
@@ -340,7 +413,7 @@
 
     // ── TOAST ──
     function toast(msg, type = 'info') {
-        const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+        const icons = { success: '\u2705', error: '\u274C', info: '\u2139\uFE0F' };
         const el = document.createElement('div');
         el.className = `toast ${type}`;
         el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
@@ -509,7 +582,6 @@
     function toInputDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
     let rangoInicializado = false;
     function inicializarRangoSiVacio() {
-        // Solo auto-rellena si ambos campos están vacíos (primera vez)
         const elD = document.getElementById('f-desde'), elH = document.getElementById('f-hasta');
         if (rangoInicializado || (elD.value && elH.value)) { rangoInicializado = true; return; }
         const fechas = [...dataLocal.compras, ...dataLocal.ventas].map(x => parseFecha(x.fecha)).filter(Boolean).sort((a,b)=>a-b);
@@ -519,7 +591,6 @@
         rangoInicializado = true;
     }
     function getRango() {
-        // Lee directamente los inputs, sin tocar su valor
         const ds = document.getElementById('f-desde').value, hs = document.getElementById('f-hasta').value;
         return { desde: ds ? new Date(`${ds}T00:00:00`) : null, hasta: hs ? new Date(`${hs}T23:59:59`) : null, desdeStr: ds, hastaStr: hs };
     }
@@ -556,11 +627,11 @@
         const tv = movs.filter(m=>m.tipo==="VENTA").reduce((s,x)=>s+x.importe,0);
         const neto = tv - tc;
         document.getElementById('fiscal-info').innerHTML =
-            `Rango <strong>${r.desdeStr||"-"}</strong> → <strong>${r.hastaStr||"-"}</strong> &nbsp;·&nbsp; `+
-            `<strong>${movs.length}</strong> registros &nbsp;·&nbsp; `+
-            `Compras <strong>${fmt(tc)}€</strong> &nbsp;·&nbsp; `+
-            `Ventas <strong>${fmt(tv)}€</strong> &nbsp;·&nbsp; `+
-            `Neto <strong style="color:${neto>=0?'#10b981':'#ef4444'};font-size:1rem">${neto>=0?'+':''}${fmt(neto)}€</strong>`;
+            `Rango <strong>${r.desdeStr||"-"}</strong> \u2192 <strong>${r.hastaStr||"-"}</strong> &nbsp;\u00b7&nbsp; `+
+            `<strong>${movs.length}</strong> registros &nbsp;\u00b7&nbsp; `+
+            `Compras <strong>${fmt(tc)}\u20ac</strong> &nbsp;\u00b7&nbsp; `+
+            `Ventas <strong>${fmt(tv)}\u20ac</strong> &nbsp;\u00b7&nbsp; `+
+            `Neto <strong style="color:${neto>=0?'#10b981':'#ef4444'};font-size:1rem">${neto>=0?'+':''}${fmt(neto)}\u20ac</strong>`;
     }
     function exportarMovimientosCSV() {
         if (!userUID) return toast("Inicia sesión.", 'error');
@@ -605,80 +676,76 @@
         const movs = getMovsFiltrados(r);
         if (!movs.length) return toast("No hay datos en ese rango.", 'error');
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const d = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-        // Cabecera
-        doc.setFillColor(15, 23, 42);
-        doc.rect(0, 0, 210, 28, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
-        doc.text('VRIXO', 14, 12);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(148, 163, 184);
-        doc.text('Informe Fiscal', 14, 19);
-        doc.setTextColor(255, 255, 255);
-        doc.text(`Generado: ${new Date().toLocaleString('es-ES')}`, 196, 19, { align: 'right' });
+        d.setFillColor(15, 23, 42);
+        d.rect(0, 0, 210, 28, 'F');
+        d.setTextColor(255, 255, 255);
+        d.setFont('helvetica', 'bold');
+        d.setFontSize(20);
+        d.text('VRIXO', 14, 12);
+        d.setFontSize(9);
+        d.setFont('helvetica', 'normal');
+        d.setTextColor(148, 163, 184);
+        d.text('Informe Fiscal', 14, 19);
+        d.setTextColor(255, 255, 255);
+        d.text(`Generado: ${new Date().toLocaleString('es-ES')}`, 196, 19, { align: 'right' });
 
-        // Rango
-        doc.setTextColor(100, 116, 139);
-        doc.setFontSize(8);
-        doc.text(`Período: ${r.desdeStr || '-'} → ${r.hastaStr || '-'}`, 14, 36);
+        d.setTextColor(100, 116, 139);
+        d.setFontSize(8);
+        d.text(`Per\u00edodo: ${r.desdeStr || '-'} \u2192 ${r.hastaStr || '-'}`, 14, 36);
 
-        // Resumen
         const tc = movs.filter(m=>m.tipo==="COMPRA").reduce((s,x)=>s+Math.abs(x.importe),0);
         const tv = movs.filter(m=>m.tipo==="VENTA").reduce((s,x)=>s+x.importe,0);
         const neto = tv - tc;
 
         const stats = [
-            { label: 'Inversión', valor: `${fmt(tc)} €`, color: [239,68,68] },
-            { label: 'Ventas',    valor: `${fmt(tv)} €`, color: [16,185,129] },
-            { label: 'Neto',      valor: `${neto>=0?'+':''}${fmt(neto)} €`, color: neto>=0?[16,185,129]:[239,68,68] }
+            { label: 'Inversi\u00f3n', valor: `${fmt(tc)} \u20ac`, color: [239,68,68] },
+            { label: 'Ventas',    valor: `${fmt(tv)} \u20ac`, color: [16,185,129] },
+            { label: 'Neto',      valor: `${neto>=0?'+':''}${fmt(neto)} \u20ac`, color: neto>=0?[16,185,129]:[239,68,68] }
         ];
         let sx = 14;
         stats.forEach(s => {
-            doc.setFillColor(248, 250, 252);
-            doc.roundedRect(sx, 40, 58, 20, 3, 3, 'F');
-            doc.setTextColor(100, 116, 139);
-            doc.setFontSize(7);
-            doc.setFont('helvetica', 'normal');
-            doc.text(s.label.toUpperCase(), sx+4, 48);
-            doc.setTextColor(...s.color);
-            doc.setFontSize(13);
-            doc.setFont('helvetica', 'bold');
-            doc.text(s.valor, sx+4, 56);
+            d.setFillColor(248, 250, 252);
+            d.roundedRect(sx, 40, 58, 20, 3, 3, 'F');
+            d.setTextColor(100, 116, 139);
+            d.setFontSize(7);
+            d.setFont('helvetica', 'normal');
+            d.text(s.label.toUpperCase(), sx+4, 48);
+            d.setTextColor(...s.color);
+            d.setFontSize(13);
+            d.setFont('helvetica', 'bold');
+            d.text(s.valor, sx+4, 56);
             sx += 64;
         });
 
-        // Tabla de compras con sus ventas
         const comprasFiltradas = dataLocal.compras.filter(c => inRango(parseFecha(c.fecha), r));
         if (comprasFiltradas.length) {
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.setTextColor(30, 41, 59);
-            doc.text('Lotes y ventas vinculadas', 14, 72);
+            d.setFont('helvetica', 'bold');
+            d.setFontSize(10);
+            d.setTextColor(30, 41, 59);
+            d.text('Lotes y ventas vinculadas', 14, 72);
             const bodyLotes = [];
             comprasFiltradas.forEach(c => {
                 const hijas = dataLocal.ventas.filter(v => v.vin === c.id);
                 const rec = hijas.reduce((s,x)=>s+(Number(x.pre)||0), 0);
                 const margen = rec - c.total;
                 bodyLotes.push([
-                    { content: `📦 ${c.nom}`, styles: { fontStyle:'bold', fillColor:[255,251,235], textColor:[146,64,14] } },
+                    { content: `\uD83D\uDCE6 ${c.nom}`, styles: { fontStyle:'bold', fillColor:[255,251,235], textColor:[146,64,14] } },
                     { content: c.fecha||'', styles: { fillColor:[255,251,235] } },
-                    { content: `-${fmt(c.total)}€`, styles: { textColor:[220,38,38], fontStyle:'bold', fillColor:[255,251,235] } },
-                    { content: `${fmt(rec)}€`, styles: { fillColor:[255,251,235] } },
-                    { content: `${margen>=0?'+':''}${fmt(margen)}€`, styles: { textColor: margen>=0?[22,101,52]:[185,28,28], fontStyle:'bold', fillColor:[255,251,235] } }
+                    { content: `-${fmt(c.total)}\u20ac`, styles: { textColor:[220,38,38], fontStyle:'bold', fillColor:[255,251,235] } },
+                    { content: `${fmt(rec)}\u20ac`, styles: { fillColor:[255,251,235] } },
+                    { content: `${margen>=0?'+':''}${fmt(margen)}\u20ac`, styles: { textColor: margen>=0?[22,101,52]:[185,28,28], fontStyle:'bold', fillColor:[255,251,235] } }
                 ]);
                 hijas.forEach(v => bodyLotes.push([
-                    { content: `  └ ${v.nom}`, styles: { textColor:[71,85,105] } },
+                    { content: `  \u2514 ${v.nom}`, styles: { textColor:[71,85,105] } },
                     v.fecha||'',
                     { content: (v.canal||'').toUpperCase(), styles: { fontSize:6, textColor:[100,116,139] } },
-                    { content: `+${fmt(v.pre)}€`, styles: { textColor:[5,150,105] } },
+                    { content: `+${fmt(v.pre)}\u20ac`, styles: { textColor:[5,150,105] } },
                     { content: (v.estado||'pendiente').charAt(0).toUpperCase()+(v.estado||'pendiente').slice(1), styles: { fontSize:7, textColor:[100,116,139] } }
                 ]));
             });
-            doc.autoTable({
+            d.autoTable({
                 startY: 75,
                 head: [['Concepto','Fecha','Canal/Coste','Recaudado','Margen/Estado']],
                 body: bodyLotes,
@@ -689,35 +756,33 @@
             });
         }
 
-        // Ventas sueltas
-        const sueltas = dataLocal.ventas.filter(v => v.vin==='suelto' && inRango(parseFecha(v.fecha), r));
-        if (sueltas.length) {
-            const y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : 72;
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.setTextColor(30, 41, 59);
-            doc.text('Ventas sueltas', 14, y);
-            doc.autoTable({
+        const sueltasPDF = dataLocal.ventas.filter(v => v.vin==='suelto' && inRango(parseFecha(v.fecha), r));
+        if (sueltasPDF.length) {
+            const y = d.lastAutoTable ? d.lastAutoTable.finalY + 8 : 72;
+            d.setFont('helvetica', 'bold');
+            d.setFontSize(10);
+            d.setTextColor(30, 41, 59);
+            d.text('Ventas sueltas', 14, y);
+            d.autoTable({
                 startY: y + 3,
-                head: [['Artículo','Fecha','Canal','Importe','Estado']],
-                body: sueltas.map(v => [v.nom||'', v.fecha||'', (v.canal||'').toUpperCase(), { content:`+${fmt(v.pre)}€`, styles:{textColor:[5,150,105], fontStyle:'bold'} }, (v.estado||'pendiente').charAt(0).toUpperCase()+(v.estado||'pendiente').slice(1)]),
+                head: [['Art\u00edculo','Fecha','Canal','Importe','Estado']],
+                body: sueltasPDF.map(v => [v.nom||'', v.fecha||'', (v.canal||'').toUpperCase(), { content:`+${fmt(v.pre)}\u20ac`, styles:{textColor:[5,150,105], fontStyle:'bold'} }, (v.estado||'pendiente').charAt(0).toUpperCase()+(v.estado||'pendiente').slice(1)]),
                 styles: { fontSize: 8, cellPadding: 3 },
                 headStyles: { fillColor:[30,41,59], textColor:255, fontStyle:'bold', fontSize:7 },
                 margin: { left:14, right:14 }
             });
         }
 
-        // Pie
-        const pageH = doc.internal.pageSize.height;
-        doc.setFillColor(248, 250, 252);
-        doc.rect(0, pageH-12, 210, 12, 'F');
-        doc.setTextColor(148, 163, 184);
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'normal');
-        doc.text('Generado por VRIXO · Documento no vinculante', 14, pageH-4);
-        doc.text(`Pág. 1`, 196, pageH-4, { align:'right' });
+        const pageH = d.internal.pageSize.height;
+        d.setFillColor(248, 250, 252);
+        d.rect(0, pageH-12, 210, 12, 'F');
+        d.setTextColor(148, 163, 184);
+        d.setFontSize(7);
+        d.setFont('helvetica', 'normal');
+        d.text('Generado por VRIXO \u00b7 Documento no vinculante', 14, pageH-4);
+        d.text(`P\u00e1g. 1`, 196, pageH-4, { align:'right' });
 
-        doc.save(`vrixo-informe-${r.desdeStr||'inicio'}-${r.hastaStr||'fin'}.pdf`);
+        d.save(`vrixo-informe-${r.desdeStr||'inicio'}-${r.hastaStr||'fin'}.pdf`);
         toast("PDF descargado.", 'success');
     }
     function exportarJSONFiscal() {
@@ -738,7 +803,7 @@
             if (!fa && !fb) return 0;
             if (!fa) return 1;
             if (!fb) return -1;
-            return fb - fa; // más reciente primero
+            return fb - fa;
         });
     }
 
@@ -754,10 +819,10 @@
     }
     function estadoBadge(estado, id) {
         const map = {
-            pendiente: ['📦 Pendiente', 'badge-pendiente'],
-            enviado: ['🚚 Enviado', 'badge-enviado'],
-            entregado: ['📬 Entregado', 'badge-entregado'],
-            cobrado: ['✅ Cobrado', 'badge-cobrado']
+            pendiente: ['\uD83D\uDCE6 Pendiente', 'badge-pendiente'],
+            enviado: ['\uD83D\uDE9A Enviado', 'badge-enviado'],
+            entregado: ['\uD83D\uDCEC Entregado', 'badge-entregado'],
+            cobrado: ['\u2705 Cobrado', 'badge-cobrado']
         };
         const [label, cls] = map[estado] || map.pendiente;
         return `<span class="badge badge-estado ${cls}" onclick="cambiarEstado('${id}')" title="Clic para avanzar estado">${label}</span>`;
@@ -770,7 +835,7 @@
         if (idx >= ordenEstados.length - 1) return toast("Ya está cobrado.", 'info');
         const siguiente = ordenEstados[idx + 1];
         await updateDoc(doc(db, "ventas", id), { estado: siguiente });
-        toast(`Estado → ${siguiente.charAt(0).toUpperCase() + siguiente.slice(1)}`, 'success');
+        toast(`Estado \u2192 ${siguiente.charAt(0).toUpperCase() + siguiente.slice(1)}`, 'success');
     };
 
     window.toggleLote = (id) => {
@@ -790,7 +855,6 @@
 
         let totalInv = 0, totalVen = 0, rowCount = 0;
 
-        // Ordenar lotes por fecha (más reciente primero)
         const comprasOrdenadas = sortByFecha(compras);
 
         comprasOrdenadas.forEach(c => {
@@ -803,17 +867,17 @@
 
             cuerpo.innerHTML += `
                 <tr class="row-lote">
-                    <td>${c.fecha||'—'}</td>
+                    <td>${c.fecha||'\u2014'}</td>
                     <td class="td-toggle" onclick="${tieneHijas ? `toggleLote('${c.id}')` : ''}">
-                        ${tieneHijas ? `<span class="toggle-icon open" data-id="${c.id}">▶</span>` : '<span style="display:inline-block;width:26px"></span>'}
-                        <strong>📦 ${c.nom}</strong>
-                        ${tieneHijas ? `<span style="margin-left:6px;font-size:0.72rem;color:#92400e;font-weight:600">${hijas.length} venta${hijas.length>1?'s':''}</span>` : ''}
+                        ${tieneHijas ? `<span class="toggle-icon open" data-id="${c.id}">\u25B6</span>` : '<span style="display:inline-block;width:26px"></span>'}
+                        <strong>\uD83D\uDCE6 ${c.nom}</strong>
+                        ${tieneHijas ? `<span style="margin-left:6px;font-size:0.7rem;color:#92400e;font-weight:600">${hijas.length} venta${hijas.length>1?'s':''}</span>` : ''}
                     </td>
                     <td><span class="badge badge-lote">Lote</span></td>
-                    <td class="amount-neg">−${c.total.toFixed(2)}€</td>
-                    <td style="color:#64748b">${rec.toFixed(2)}€ rec.</td>
-                    <td><span class="badge ${margen >= 0 ? 'badge-win' : 'badge-loss'}">${margen >= 0 ? '▲' : '▼'} ${margen.toFixed(2)}€</span></td>
-                    <td><button class="btn-del" onclick="borrarReg('c','${c.id}')">✕</button></td>
+                    <td class="amount-neg">\u2212${c.total.toFixed(2)}\u20ac</td>
+                    <td style="color:#64748b;font-weight:500">${rec.toFixed(2)}\u20ac rec.</td>
+                    <td><span class="badge ${margen >= 0 ? 'badge-win' : 'badge-loss'}">${margen >= 0 ? '\u25B2' : '\u25BC'} ${margen.toFixed(2)}\u20ac</span></td>
+                    <td><button class="btn-del" onclick="borrarReg('c','${c.id}')">\u2715</button></td>
                 </tr>`;
 
             hijas.forEach(v => {
@@ -821,50 +885,49 @@
                 rowCount++;
                 cuerpo.innerHTML += `
                     <tr class="row-venta venta-hijo" data-lote="${c.id}">
-                        <td style="color:#94a3b8;font-size:0.8rem">${v.fecha||'—'}</td>
-                        <td class="indent-cell">└ 💰 ${v.nom}</td>
+                        <td style="color:#94a3b8;font-size:0.8rem">${v.fecha||'\u2014'}</td>
+                        <td class="indent-cell">\u2514 \uD83D\uDCB0 ${v.nom}</td>
                         <td>${canalBadge(v.canal)}</td>
-                        <td style="color:#94a3b8">—</td>
-                        <td class="amount-pos">+${v.pre.toFixed(2)}€</td>
+                        <td style="color:#94a3b8">\u2014</td>
+                        <td class="amount-pos">+${v.pre.toFixed(2)}\u20ac</td>
                         <td>${estadoBadge(v.estado||'pendiente', v.id)}</td>
-                        <td><button class="btn-del" onclick="borrarReg('v','${v.id}')">✕</button></td>
+                        <td><button class="btn-del" onclick="borrarReg('v','${v.id}')">\u2715</button></td>
                     </tr>`;
             });
 
-            select.innerHTML += `<option value="${c.id}">📦 ${c.nom}</option>`;
+            select.innerHTML += `<option value="${c.id}">\uD83D\uDCE6 ${c.nom}</option>`;
         });
 
         const sueltas = sortByFecha(ventas.filter(v => v.vin === 'suelto'));
         if (sueltas.length) {
-            cuerpo.innerHTML += `<tr><td colspan="7" style="padding:6px 16px;background:#f8fafc;font-size:0.7rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;">Ventas sin lote</td></tr>`;
+            cuerpo.innerHTML += `<tr><td colspan="7" style="padding:8px 18px;background:#f8fafc;font-size:0.68rem;font-weight:700;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase;">Ventas sin lote</td></tr>`;
             sueltas.forEach(v => {
                 totalVen += v.pre;
                 rowCount++;
                 cuerpo.innerHTML += `
                     <tr class="row-suelta">
-                        <td>${v.fecha||'—'}</td>
-                        <td>💰 ${v.nom}</td>
+                        <td>${v.fecha||'\u2014'}</td>
+                        <td>\uD83D\uDCB0 ${v.nom}</td>
                         <td>${canalBadge(v.canal)}</td>
-                        <td style="color:#94a3b8">—</td>
-                        <td class="amount-pos">+${v.pre.toFixed(2)}€</td>
+                        <td style="color:#94a3b8">\u2014</td>
+                        <td class="amount-pos">+${v.pre.toFixed(2)}\u20ac</td>
                         <td>${estadoBadge(v.estado||'pendiente', v.id)}</td>
-                        <td><button class="btn-del" onclick="borrarReg('v','${v.id}')">✕</button></td>
+                        <td><button class="btn-del" onclick="borrarReg('v','${v.id}')">\u2715</button></td>
                     </tr>`;
             });
         }
 
         if (rowCount === 0) {
-            cuerpo.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div><div>Sin registros todavía</div></div></td></tr>`;
+            cuerpo.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">\uD83D\uDCED</div><div>Sin registros todav\u00eda</div></div></td></tr>`;
         }
 
         document.getElementById('row-count').textContent = `${rowCount} registros`;
-        document.getElementById('t-gastos').textContent = totalInv.toFixed(2) + "€";
-        document.getElementById('t-ventas').textContent = totalVen.toFixed(2) + "€";
+        document.getElementById('t-gastos').textContent = totalInv.toFixed(2) + "\u20ac";
+        document.getElementById('t-ventas').textContent = totalVen.toFixed(2) + "\u20ac";
         const neto = totalVen - totalInv;
         const elNeto = document.getElementById('t-neto');
-        elNeto.textContent = neto.toFixed(2) + "€";
+        elNeto.textContent = neto.toFixed(2) + "\u20ac";
         elNeto.style.color = neto >= 0 ? "#4ade80" : "#f87171";
-        // Inicializa el rango la primera vez (sin sobreescribir si el usuario ya eligió fechas)
         inicializarRangoSiVacio();
         actualizarResumenFiscal();
     }
