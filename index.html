@@ -153,6 +153,19 @@
         .badge-win      { background: #dcfce7; color: #166534; }
         .badge-loss     { background: #fee2e2; color: #991b1b; }
 
+        /* Canales */
+        .badge-wallapop { background: #e8f5e9; color: #2e7d32; }
+        .badge-vinted   { background: #e3f2fd; color: #1565c0; }
+        .badge-persona  { background: #fff3e0; color: #e65100; }
+
+        /* Estados */
+        .badge-estado   { cursor: pointer; transition: all .15s; }
+        .badge-estado:hover { filter: brightness(0.92); transform: scale(1.05); }
+        .badge-pendiente  { background: #fef3c7; color: #92400e; }
+        .badge-enviado    { background: #dbeafe; color: #1e40af; }
+        .badge-entregado  { background: #e0e7ff; color: #3730a3; }
+        .badge-cobrado    { background: #dcfce7; color: #166534; }
+
         .indent-cell { padding-left: 32px !important; color: var(--muted); }
         .amount-neg { color: var(--danger); font-weight: 600; }
         .amount-pos { color: var(--success); font-weight: 600; }
@@ -244,6 +257,11 @@
                 <div class="form-field"><label>Artículo vendido</label><input type="text" id="v-nom" placeholder="Ej: Nike Air Max talla 42"></div>
                 <div class="form-field"><label>Precio venta (€)</label><input type="number" id="v-pre" placeholder="0.00" step="0.01"></div>
                 <div class="form-field"><label>Vincular a lote</label><select id="v-vin"><option value="suelto">Venta suelta (sin lote)</option></select></div>
+                <div class="form-field"><label>Canal de venta</label><select id="v-canal">
+                    <option value="wallapop">Wallapop</option>
+                    <option value="vinted">Vinted</option>
+                    <option value="persona">En persona</option>
+                </select></div>
                 <button class="btn btn-venta" id="btn-add-venta">Guardar Venta</button>
             </div>
         </div>
@@ -300,7 +318,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query, where, getDocs, writeBatch, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -409,8 +427,10 @@
         const nom = document.getElementById('v-nom').value.trim();
         const pre = parseFloat(document.getElementById('v-pre').value) || 0;
         const vin = document.getElementById('v-vin').value;
+        const canal = document.getElementById('v-canal').value;
+        const estado = canal === 'persona' ? 'cobrado' : 'pendiente';
         if (!nom || pre <= 0) return toast("Rellena el artículo y el precio.", 'error');
-        await addDoc(collection(db, "ventas"), { uid: userUID, nom, pre, vin, fecha: new Date().toLocaleDateString() });
+        await addDoc(collection(db, "ventas"), { uid: userUID, nom, pre, vin, canal, estado, fecha: new Date().toLocaleDateString() });
         document.getElementById('v-nom').value = "";
         document.getElementById('v-pre').value = "";
         toast("Venta guardada correctamente.", 'success');
@@ -464,7 +484,7 @@
         }
         for (const v of ventasBackup) {
             if (!v?.id || existV.has(v.id)) continue;
-            batch.set(doc(db, "ventas", v.id), { uid: userUID, nom: v.nom||"Venta importada", pre: Number(v.pre)||0, vin: v.vin||"suelto", fecha: v.fecha||new Date().toLocaleDateString() }, { merge: true });
+            batch.set(doc(db, "ventas", v.id), { uid: userUID, nom: v.nom||"Venta importada", pre: Number(v.pre)||0, vin: v.vin||"suelto", canal: v.canal||"wallapop", estado: v.estado||"pendiente", fecha: v.fecha||new Date().toLocaleDateString() }, { merge: true });
             existV.add(v.id); vi++; ops++;
             if (ops >= 400) await flush();
         }
@@ -524,7 +544,7 @@
         if (!r) r = getRango();
         return [
             ...dataLocal.compras.map(c => ({ fecha:c.fecha||"", fechaObj:parseFecha(c.fecha), tipo:"COMPRA", concepto:c.nom||"", id:c.id, vinculo:"", importe:-Math.abs(Number(c.total)||0) })),
-            ...dataLocal.ventas.map(v  => ({ fecha:v.fecha||"",  fechaObj:parseFecha(v.fecha),  tipo:"VENTA",  concepto:v.nom||"", id:v.id, vinculo:v.vin||"suelto", importe:Math.abs(Number(v.pre)||0) }))
+            ...dataLocal.ventas.map(v  => ({ fecha:v.fecha||"",  fechaObj:parseFecha(v.fecha),  tipo:"VENTA",  concepto:v.nom||"", id:v.id, vinculo:v.vin||"suelto", canal:v.canal||"", estado:v.estado||"", importe:Math.abs(Number(v.pre)||0) }))
         ].filter(m => inRango(m.fechaObj, r)).sort((a,b) => (a.fechaObj?.getTime()||0)-(b.fechaObj?.getTime()||0));
     }
     function actualizarResumenFiscal() {
@@ -544,9 +564,9 @@
     }
     function exportarMovimientosCSV() {
         if (!userUID) return toast("Inicia sesión.", 'error');
-        const filas = getMovsFiltrados().map(m=>[m.fecha,m.tipo,m.concepto,m.id,m.vinculo,fmt(m.importe)]);
+        const filas = getMovsFiltrados().map(m=>[m.fecha,m.tipo,m.concepto,m.id,m.vinculo,m.canal,m.estado,fmt(m.importe)]);
         if (!filas.length) return toast("No hay movimientos en ese rango.", 'error');
-        descargarCSV("vrixo-movimientos.csv", ["fecha","tipo","concepto","id","vinculo","importe"], filas);
+        descargarCSV("vrixo-movimientos.csv", ["fecha","tipo","concepto","id","vinculo","canal","estado","importe"], filas);
         toast("CSV descargado.", 'success');
     }
     function exportarComprasCSV() {
@@ -563,9 +583,9 @@
     function exportarVentasCSV() {
         if (!userUID) return toast("Inicia sesión.", 'error');
         const r = getRango();
-        const filas = dataLocal.ventas.filter(v=>inRango(parseFecha(v.fecha),r)).map(v=>[v.fecha||"",v.id,v.nom||"",fmt(v.pre),v.vin||"suelto"]);
+        const filas = dataLocal.ventas.filter(v=>inRango(parseFecha(v.fecha),r)).map(v=>[v.fecha||"",v.id,v.nom||"",fmt(v.pre),v.vin||"suelto",v.canal||"",v.estado||""]);
         if (!filas.length) return toast("No hay ventas en ese rango.", 'error');
-        descargarCSV("vrixo-ventas.csv", ["fecha","id","articulo","importe","vinculo_lote"], filas);
+        descargarCSV("vrixo-ventas.csv", ["fecha","id","articulo","importe","vinculo_lote","canal","estado"], filas);
         toast("CSV descargado.", 'success');
     }
     async function exportarBorradosCSV() {
@@ -652,18 +672,19 @@
                 ]);
                 hijas.forEach(v => bodyLotes.push([
                     { content: `  └ ${v.nom}`, styles: { textColor:[71,85,105] } },
-                    v.fecha||'', '',
+                    v.fecha||'',
+                    { content: (v.canal||'').toUpperCase(), styles: { fontSize:6, textColor:[100,116,139] } },
                     { content: `+${fmt(v.pre)}€`, styles: { textColor:[5,150,105] } },
-                    ''
+                    { content: (v.estado||'pendiente').charAt(0).toUpperCase()+(v.estado||'pendiente').slice(1), styles: { fontSize:7, textColor:[100,116,139] } }
                 ]));
             });
             doc.autoTable({
                 startY: 75,
-                head: [['Concepto','Fecha','Coste','Recaudado','Margen']],
+                head: [['Concepto','Fecha','Canal/Coste','Recaudado','Margen/Estado']],
                 body: bodyLotes,
                 styles: { fontSize: 8, cellPadding: 3 },
                 headStyles: { fillColor:[30,41,59], textColor:255, fontStyle:'bold', fontSize:7 },
-                columnStyles: { 0:{cellWidth:70}, 1:{cellWidth:22}, 2:{cellWidth:25}, 3:{cellWidth:25}, 4:{cellWidth:25} },
+                columnStyles: { 0:{cellWidth:60}, 1:{cellWidth:22}, 2:{cellWidth:28}, 3:{cellWidth:25}, 4:{cellWidth:30} },
                 margin: { left:14, right:14 }
             });
         }
@@ -678,8 +699,8 @@
             doc.text('Ventas sueltas', 14, y);
             doc.autoTable({
                 startY: y + 3,
-                head: [['Artículo','Fecha','Importe']],
-                body: sueltas.map(v => [v.nom||'', v.fecha||'', { content:`+${fmt(v.pre)}€`, styles:{textColor:[5,150,105], fontStyle:'bold'} }]),
+                head: [['Artículo','Fecha','Canal','Importe','Estado']],
+                body: sueltas.map(v => [v.nom||'', v.fecha||'', (v.canal||'').toUpperCase(), { content:`+${fmt(v.pre)}€`, styles:{textColor:[5,150,105], fontStyle:'bold'} }, (v.estado||'pendiente').charAt(0).toUpperCase()+(v.estado||'pendiente').slice(1)]),
                 styles: { fontSize: 8, cellPadding: 3 },
                 headStyles: { fillColor:[30,41,59], textColor:255, fontStyle:'bold', fontSize:7 },
                 margin: { left:14, right:14 }
@@ -720,6 +741,37 @@
             return fb - fa; // más reciente primero
         });
     }
+
+    // ── CANAL & ESTADO HELPERS ──
+    function canalBadge(canal) {
+        const map = {
+            wallapop: ['Wallapop', 'badge-wallapop'],
+            vinted: ['Vinted', 'badge-vinted'],
+            persona: ['En persona', 'badge-persona']
+        };
+        const [label, cls] = map[canal] || ['Venta', 'badge-venta'];
+        return `<span class="badge ${cls}">${label}</span>`;
+    }
+    function estadoBadge(estado, id) {
+        const map = {
+            pendiente: ['📦 Pendiente', 'badge-pendiente'],
+            enviado: ['🚚 Enviado', 'badge-enviado'],
+            entregado: ['📬 Entregado', 'badge-entregado'],
+            cobrado: ['✅ Cobrado', 'badge-cobrado']
+        };
+        const [label, cls] = map[estado] || map.pendiente;
+        return `<span class="badge badge-estado ${cls}" onclick="cambiarEstado('${id}')" title="Clic para avanzar estado">${label}</span>`;
+    }
+    const ordenEstados = ['pendiente', 'enviado', 'entregado', 'cobrado'];
+    window.cambiarEstado = async (id) => {
+        const venta = dataLocal.ventas.find(v => v.id === id);
+        if (!venta) return;
+        const idx = ordenEstados.indexOf(venta.estado || 'pendiente');
+        if (idx >= ordenEstados.length - 1) return toast("Ya está cobrado.", 'info');
+        const siguiente = ordenEstados[idx + 1];
+        await updateDoc(doc(db, "ventas", id), { estado: siguiente });
+        toast(`Estado → ${siguiente.charAt(0).toUpperCase() + siguiente.slice(1)}`, 'success');
+    };
 
     window.toggleLote = (id) => {
         const icon = document.querySelector(`.toggle-icon[data-id="${id}"]`);
@@ -771,10 +823,10 @@
                     <tr class="row-venta venta-hijo" data-lote="${c.id}">
                         <td style="color:#94a3b8;font-size:0.8rem">${v.fecha||'—'}</td>
                         <td class="indent-cell">└ 💰 ${v.nom}</td>
-                        <td><span class="badge badge-venta">Venta</span></td>
+                        <td>${canalBadge(v.canal)}</td>
                         <td style="color:#94a3b8">—</td>
                         <td class="amount-pos">+${v.pre.toFixed(2)}€</td>
-                        <td style="color:#94a3b8;font-size:0.75rem">Del lote</td>
+                        <td>${estadoBadge(v.estado||'pendiente', v.id)}</td>
                         <td><button class="btn-del" onclick="borrarReg('v','${v.id}')">✕</button></td>
                     </tr>`;
             });
@@ -792,10 +844,10 @@
                     <tr class="row-suelta">
                         <td>${v.fecha||'—'}</td>
                         <td>💰 ${v.nom}</td>
-                        <td><span class="badge badge-suelta">Suelta</span></td>
+                        <td>${canalBadge(v.canal)}</td>
                         <td style="color:#94a3b8">—</td>
                         <td class="amount-pos">+${v.pre.toFixed(2)}€</td>
-                        <td style="color:#94a3b8;font-size:0.75rem">Sin lote</td>
+                        <td>${estadoBadge(v.estado||'pendiente', v.id)}</td>
                         <td><button class="btn-del" onclick="borrarReg('v','${v.id}')">✕</button></td>
                     </tr>`;
             });
