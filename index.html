@@ -224,6 +224,25 @@
         .amount-neg { color: var(--danger); font-weight: 700; font-variant-numeric: tabular-nums; }
         .amount-pos { color: var(--success); font-weight: 700; font-variant-numeric: tabular-nums; }
 
+        /* ── INVENTARIO ── */
+        .inv-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .inv-filter-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border); background: white; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all var(--transition); font-family: inherit; color: var(--muted); }
+        .inv-filter-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+        .inv-filter-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+        .badge-disponible { background: #f0fdf4; color: #166534; border-color: #86efac; }
+        .badge-vendido-inv { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+        .amazon-link { display: inline-flex; align-items: center; gap: 3px; color: #f59e0b; font-size: 0.72rem; text-decoration: none; font-weight: 700; }
+        .amazon-link:hover { text-decoration: underline; }
+        .lpn-code { font-size: 0.66rem; color: var(--muted); font-family: monospace; letter-spacing: .02em; }
+        .btn-vender { background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all var(--transition); font-family: inherit; white-space: nowrap; }
+        .btn-vender:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+        .btn-vender:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+        .inv-nom { font-size: 0.82rem; color: #1e293b; line-height: 1.4; }
+        .inv-nom small { display: block; color: var(--muted); font-size: 0.68rem; margin-top: 3px; }
+        .inv-td { padding: 11px 14px; border-bottom: 1px solid var(--border-light); font-size: 0.83rem; vertical-align: middle; }
+        .inv-tr:last-child .inv-td { border-bottom: none; }
+        .inv-tr:hover { background: #fafbfd; }
+
         .btn-del { background: none; border: 1px solid transparent; cursor: pointer; color: #d1d5db; padding: 5px 7px;
             border-radius: 8px; transition: all .15s; font-size: 0.8rem; }
         .btn-del:hover { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
@@ -339,6 +358,34 @@
             </div>
         </div>
 
+        <!-- INVENTARIO -->
+        <div class="card" style="margin-bottom:24px" id="card-inventario">
+            <div class="card-title"><span class="icon" style="background:linear-gradient(135deg,#e0f2fe,#bae6fd)">&#x1F4CB;</span> Inventario de Stock <span id="inv-count-badge" style="margin-left:auto;font-size:0.72rem;font-weight:600;color:var(--muted);background:var(--bg);padding:3px 10px;border-radius:20px;border:1px solid var(--border-light)">0 productos</span></div>
+            <div class="inv-filters">
+                <button class="inv-filter-btn active" onclick="filtrarInv('todos')">Todos</button>
+                <button class="inv-filter-btn" onclick="filtrarInv('disponible')">&#x1F7E2; Disponibles</button>
+                <button class="inv-filter-btn" onclick="filtrarInv('vendido')">&#x2713; Vendidos</button>
+                <button class="inv-filter-btn" onclick="filtrarInv('lote2')">Lote 2</button>
+                <button class="inv-filter-btn" onclick="filtrarInv('lote3')">Lote 3</button>
+            </div>
+            <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse">
+                    <thead>
+                        <tr>
+                            <th style="background:#f8fafc;padding:10px 14px;text-align:left;color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;border-bottom:2px solid var(--border);white-space:nowrap">Lote</th>
+                            <th style="background:#f8fafc;padding:10px 14px;text-align:left;color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;border-bottom:2px solid var(--border)">Producto</th>
+                            <th style="background:#f8fafc;padding:10px 14px;text-align:left;color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;border-bottom:2px solid var(--border);white-space:nowrap">Coste</th>
+                            <th style="background:#f8fafc;padding:10px 14px;text-align:left;color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;border-bottom:2px solid var(--border);white-space:nowrap">Retail</th>
+                            <th style="background:#f8fafc;padding:10px 14px;text-align:left;color:#64748b;font-size:0.65rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;border-bottom:2px solid var(--border)">Estado</th>
+                            <th style="background:#f8fafc;padding:10px 14px;border-bottom:2px solid var(--border)"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="inv-cuerpo"></tbody>
+                </table>
+            </div>
+            <div style="padding:10px 2px 0;font-size:0.75rem;color:var(--muted)" id="inv-stats"></div>
+        </div>
+
         <!-- FISCAL -->
         <div class="card card-fiscal">
             <div class="card-title"><span class="icon icon-fiscal">&#x1F9FE;</span> Exportacion Fiscal</div>
@@ -408,9 +455,11 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     let userUID = null;
-    let dataLocal = { compras: [], ventas: [] };
+    let dataLocal = { compras: [], ventas: [], inventario: [] };
     let stopCompras = null;
     let stopVentas = null;
+    let stopInventario = null;
+    let invFiltro = 'todos';
 
     // ── TOAST ──
     function toast(msg, type = 'info') {
@@ -462,9 +511,10 @@
         } else {
             if (stopCompras) stopCompras();
             if (stopVentas) stopVentas();
-            stopCompras = stopVentas = null;
+            if (stopInventario) stopInventario();
+            stopCompras = stopVentas = stopInventario = null;
             userUID = null;
-            dataLocal = { compras: [], ventas: [] };
+            dataLocal = { compras: [], ventas: [], inventario: [] };
             rangoInicializado = false;
             document.getElementById('f-desde').value = '';
             document.getElementById('f-hasta').value = '';
@@ -483,6 +533,10 @@
         stopVentas = onSnapshot(query(collection(db, "ventas"), where("uid", "==", userUID)), (s) => {
             dataLocal.ventas = s.docs.map(d => ({ id: d.id, ...d.data() }));
             actualizarUI();
+        });
+        stopInventario = onSnapshot(query(collection(db, "inventario"), where("uid", "==", userUID)), (s) => {
+            dataLocal.inventario = s.docs.map(d => ({ id: d.id, ...d.data() }));
+            actualizarInventario();
         });
     }
 
@@ -509,6 +563,10 @@
         document.getElementById('v-nom').value = "";
         document.getElementById('v-pre').value = "";
         document.getElementById('v-cos').value = "";
+        if (window._pendingInvId) {
+            try { await updateDoc(doc(db, "inventario", window._pendingInvId), { estado: 'vendido' }); } catch(e) {}
+            window._pendingInvId = null;
+        }
         toast("Venta guardada correctamente.", 'success');
     });
 
@@ -516,19 +574,27 @@
         if (!confirm("¿Eliminar permanentemente?")) return;
         const origen = tipo === 'c' ? dataLocal.compras : dataLocal.ventas;
         const registro = origen.find(item => item.id === id);
-        if (registro) {
-            await addDoc(collection(db, "historial_borrados"), {
-                uid: userUID, tipo, originalId: id, registro,
-                eliminadoEn: new Date().toISOString()
-            });
+        try {
+            if (registro) {
+                await addDoc(collection(db, "historial_borrados"), {
+                    uid: userUID, tipo, originalId: id, registro,
+                    eliminadoEn: new Date().toISOString()
+                });
+            }
+        } catch(e) {
+            console.warn("Historial no guardado:", e.message);
         }
-        await deleteDoc(doc(db, tipo === 'c' ? "compras" : "ventas", id));
-        toast("Registro eliminado.", 'info');
+        try {
+            await deleteDoc(doc(db, tipo === 'c' ? "compras" : "ventas", id));
+            toast("Registro eliminado.", 'info');
+        } catch(e) {
+            toast("Error al eliminar: " + e.message, 'error');
+        }
     };
 
     function descargarBackup() {
         if (!userUID) return toast("Inicia sesión para exportar.", 'error');
-        const payload = { version: 1, uid: userUID, fechaExportacion: new Date().toISOString(), compras: dataLocal.compras, ventas: dataLocal.ventas };
+        const payload = { version: 1, uid: userUID, fechaExportacion: new Date().toISOString(), compras: dataLocal.compras, ventas: dataLocal.ventas, inventario: dataLocal.inventario };
         descargarBlob(JSON.stringify(payload, null, 2), `vrixo-backup-${new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}.json`, "application/json");
         toast("Backup descargado.", 'success');
     }
@@ -540,16 +606,19 @@
         catch { return toast("El archivo no es un JSON válido.", 'error'); }
         const comprasBackup = Array.isArray(contenido.compras) ? contenido.compras : [];
         const ventasBackup  = Array.isArray(contenido.ventas)  ? contenido.ventas  : [];
-        if (!comprasBackup.length && !ventasBackup.length) return toast("El backup no contiene datos.", 'error');
+        const invBackup     = Array.isArray(contenido.inventario) ? contenido.inventario : [];
+        if (!comprasBackup.length && !ventasBackup.length && !invBackup.length) return toast("El backup no contiene datos.", 'error');
 
-        const [snapC, snapV] = await Promise.all([
-            getDocs(query(collection(db, "compras"), where("uid", "==", userUID))),
-            getDocs(query(collection(db, "ventas"),  where("uid", "==", userUID)))
+        const [snapC, snapV, snapI] = await Promise.all([
+            getDocs(query(collection(db, "compras"),    where("uid", "==", userUID))),
+            getDocs(query(collection(db, "ventas"),     where("uid", "==", userUID))),
+            getDocs(query(collection(db, "inventario"), where("uid", "==", userUID)))
         ]);
         const existC = new Set(snapC.docs.map(d => d.id));
         const existV = new Set(snapV.docs.map(d => d.id));
+        const existI = new Set(snapI.docs.map(d => d.id));
 
-        let batch = writeBatch(db), ops = 0, ci = 0, vi = 0;
+        let batch = writeBatch(db), ops = 0, ci = 0, vi = 0, ii = 0;
         const flush = async () => { if (ops) { await batch.commit(); batch = writeBatch(db); ops = 0; } };
 
         for (const c of comprasBackup) {
@@ -564,8 +633,14 @@
             existV.add(v.id); vi++; ops++;
             if (ops >= 400) await flush();
         }
+        for (const inv of invBackup) {
+            if (!inv?.id || existI.has(inv.id)) continue;
+            batch.set(doc(db, "inventario", inv.id), { uid: userUID, loteId: inv.loteId||'', lote: inv.lote||'', nom: inv.nom||'Producto', asin: inv.asin||'', enlace: inv.enlace||'', coste: Number(inv.coste)||0, retail: Number(inv.retail)||0, lpn: inv.lpn||'', estado: inv.estado||'disponible', fecha: inv.fecha||new Date().toLocaleDateString() }, { merge: true });
+            existI.add(inv.id); ii++; ops++;
+            if (ops >= 400) await flush();
+        }
         await flush();
-        toast(`Restaurado: ${ci} compras, ${vi} ventas.`, 'success');
+        toast(`Restaurado: ${ci} lotes, ${vi} ventas, ${ii} productos en inventario.`, 'success');
     }
 
     // ── FISCAL ──
@@ -840,6 +915,72 @@
         await updateDoc(doc(db, "ventas", id), { estado: siguiente });
         toast(`Estado \u2192 ${siguiente.charAt(0).toUpperCase() + siguiente.slice(1)}`, 'success');
     };
+
+    // ── INVENTARIO ──
+    window.filtrarInv = (f) => {
+        invFiltro = f;
+        document.querySelectorAll('.inv-filter-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        actualizarInventario();
+    };
+
+    window.prepVenta = (id) => {
+        const item = dataLocal.inventario.find(i => i.id === id);
+        if (!item) return;
+        document.getElementById('v-nom').value = item.nom ? item.nom.substring(0, 80) : '';
+        document.getElementById('v-cos').value = item.coste || 0;
+        const sel = document.getElementById('v-vin');
+        for (const opt of sel.options) { if (opt.value === item.loteId) { sel.value = item.loteId; break; } }
+        window._pendingInvId = id;
+        document.getElementById('v-pre').focus();
+        document.getElementById('v-pre').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        toast('↑ Pon el precio de venta y el canal, luego Guardar.', 'info');
+    };
+
+    function actualizarInventario() {
+        const cuerpo = document.getElementById('inv-cuerpo');
+        if (!cuerpo) return;
+        let items = [...dataLocal.inventario];
+        if (invFiltro === 'disponible') items = items.filter(i => i.estado !== 'vendido');
+        else if (invFiltro === 'vendido') items = items.filter(i => i.estado === 'vendido');
+        else if (invFiltro === 'lote2') items = items.filter(i => (i.lote||'').toLowerCase().includes('lote 2') || (i.loteId||'').includes('lote2'));
+        else if (invFiltro === 'lote3') items = items.filter(i => (i.lote||'').toLowerCase().includes('lote 3') || (i.loteId||'').includes('lote3'));
+
+        const total = dataLocal.inventario.length;
+        const disp = dataLocal.inventario.filter(i => i.estado !== 'vendido').length;
+        const vend = total - disp;
+        const el = document.getElementById('inv-count-badge');
+        if (el) el.textContent = `${disp} disponibles · ${vend} vendidos`;
+        const stats = document.getElementById('inv-stats');
+        if (stats) stats.textContent = `Mostrando ${items.length} de ${total} productos`;
+
+        if (items.length === 0) {
+            cuerpo.innerHTML = `<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--muted)">Sin productos${invFiltro !== 'todos' ? ' con ese filtro' : '. Importa los lotes con Restaurar.'}</td></tr>`;
+            return;
+        }
+
+        cuerpo.innerHTML = items.map(item => {
+            const vendido = item.estado === 'vendido';
+            const loteLabel = (item.lote||'').replace('Lote ', 'L');
+            const loteBadge = (item.loteId||'').includes('lote2')
+                ? '<span class="badge badge-lote">L2</span>'
+                : '<span class="badge" style="background:#ede9fe;color:#5b21b6;border-color:#c4b5fd">L3</span>';
+            const enlace = item.enlace ? `<a class="amazon-link" href="${item.enlace}" target="_blank">\u{1F6CD}️ Amazon</a>` : '';
+            const lpn = item.lpn ? `<span class="lpn-code">${item.lpn}</span>` : '';
+            const estadoBadge = vendido
+                ? '<span class="badge badge-vendido-inv">✓ Vendido</span>'
+                : '<span class="badge badge-disponible">● Disponible</span>';
+            const nomCorto = (item.nom||'').length > 70 ? item.nom.substring(0,70)+'...' : (item.nom||'—');
+            return `<tr class="inv-tr" style="${vendido ? 'opacity:0.55' : ''}">
+                <td class="inv-td">${loteBadge}</td>
+                <td class="inv-td"><div class="inv-nom">${nomCorto}<small>${enlace} ${lpn}</small></div></td>
+                <td class="inv-td amount-neg">−${(item.coste||0).toFixed(2)}€</td>
+                <td class="inv-td" style="color:var(--muted)">${(item.retail||0).toFixed(2)}€</td>
+                <td class="inv-td">${estadoBadge}</td>
+                <td class="inv-td" style="text-align:right"><button class="btn-vender" onclick="prepVenta('${item.id}')" ${vendido ? 'disabled' : ''}>${vendido ? 'Vendido' : 'Vender →'}</button></td>
+            </tr>`;
+        }).join('');
+    }
 
     window.toggleLote = (id) => {
         const icon = document.querySelector(`.toggle-icon[data-id="${id}"]`);
