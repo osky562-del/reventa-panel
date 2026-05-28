@@ -384,6 +384,22 @@
                 </table>
             </div>
             <div style="padding:10px 2px 0;font-size:0.75rem;color:var(--muted)" id="inv-stats"></div>
+
+            <!-- Formulario añadir producto manual -->
+            <div style="margin-top:16px;border-top:1px solid var(--border-light);padding-top:14px">
+                <button onclick="toggleAddInv()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--primary);background:transparent;color:var(--primary);font-weight:700;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:all var(--transition)" onmouseover="this.style.background='var(--primary-glow)'" onmouseout="this.style.background='transparent'">&#43; A&#241;adir producto manualmente</button>
+                <div id="form-add-inv" style="display:none;margin-top:14px">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                        <div class="form-field"><label>Nombre del producto</label><input type="text" id="inv-add-nom" placeholder="Ej: Nike Air Max talla 42"></div>
+                        <div class="form-field"><label>Enlace Amazon (opcional)</label><input type="text" id="inv-add-enlace" placeholder="https://www.amazon.es/dp/..."></div>
+                        <div class="form-field"><label>Coste (&euro;)</label><input type="number" id="inv-add-cos" placeholder="0.00" step="0.01"></div>
+                        <div class="form-field"><label>Valor retail (&euro;)</label><input type="number" id="inv-add-retail" placeholder="0.00" step="0.01"></div>
+                        <div class="form-field"><label>Vincular a lote</label><select id="inv-add-lote"><option value="">Sin lote</option></select></div>
+                        <div class="form-field"><label>LPN / Referencia (opcional)</label><input type="text" id="inv-add-lpn" placeholder="LPNWE345..."></div>
+                    </div>
+                    <button class="btn btn-compra" style="max-width:220px;margin-top:4px" onclick="guardarProductoInv()">Guardar en inventario</button>
+                </div>
+            </div>
         </div>
 
         <!-- FISCAL -->
@@ -527,16 +543,15 @@
         if (stopCompras) stopCompras();
         if (stopVentas) stopVentas();
         stopCompras = onSnapshot(query(collection(db, "compras"), where("uid", "==", userUID)), (s) => {
-            dataLocal.compras = s.docs.map(d => ({ id: d.id, ...d.data() }));
+            const all = s.docs.map(d => ({ id: d.id, ...d.data() }));
+            dataLocal.compras = all.filter(c => c.tipo !== 'producto');
+            dataLocal.inventario = all.filter(c => c.tipo === 'producto');
             actualizarUI();
+            actualizarInventario();
         });
         stopVentas = onSnapshot(query(collection(db, "ventas"), where("uid", "==", userUID)), (s) => {
             dataLocal.ventas = s.docs.map(d => ({ id: d.id, ...d.data() }));
             actualizarUI();
-        });
-        stopInventario = onSnapshot(query(collection(db, "inventario"), where("uid", "==", userUID)), (s) => {
-            dataLocal.inventario = s.docs.map(d => ({ id: d.id, ...d.data() }));
-            actualizarInventario();
         });
     }
 
@@ -564,7 +579,7 @@
         document.getElementById('v-pre').value = "";
         document.getElementById('v-cos').value = "";
         if (window._pendingInvId) {
-            try { await updateDoc(doc(db, "inventario", window._pendingInvId), { estado: 'vendido' }); } catch(e) {}
+            try { await updateDoc(doc(db, "compras", window._pendingInvId), { estado: 'vendido' }); } catch(e) {}
             window._pendingInvId = null;
         }
         toast("Venta guardada correctamente.", 'success');
@@ -586,10 +601,41 @@
         }
         try {
             await deleteDoc(doc(db, tipo === 'c' ? "compras" : "ventas", id));
-            toast("Registro eliminado.", 'info');
+            if (tipo === 'c') {
+                // Consultar Firestore directamente para borrar productos vinculados
+                const snapOrfanos = await getDocs(query(collection(db, "compras"),
+                    where("uid", "==", userUID),
+                    where("tipo", "==", "producto"),
+                    where("loteId", "==", id)));
+                if (snapOrfanos.size > 0) {
+                    let b = writeBatch(db), n = 0;
+                    for (const d of snapOrfanos.docs) {
+                        b.delete(d.ref); n++;
+                        if (n >= 400) { await b.commit(); b = writeBatch(db); n = 0; }
+                    }
+                    if (n > 0) await b.commit();
+                    toast(`Lote y ${snapOrfanos.size} productos eliminados.`, 'info');
+                } else {
+                    toast("Lote eliminado.", 'info');
+                }
+            } else {
+                toast("Registro eliminado.", 'info');
+            }
         } catch(e) {
             toast("Error al eliminar: " + e.message, 'error');
         }
+    };
+
+    window.limpiarInventarioHuerfano = async () => {
+        if (!confirm("¿Borrar todos los productos del inventario que no tengan lote asociado o cuyos lotes ya no existan?")) return;
+        const loteIds = new Set(dataLocal.compras.map(c => c.id));
+        const snap = await getDocs(query(collection(db, "compras"), where("uid", "==", userUID), where("tipo", "==", "producto")));
+        const aEliminar = snap.docs.filter(d => !loteIds.has(d.data().loteId || '__ninguno__') && d.data().loteId);
+        if (!aEliminar.length) return toast("No hay productos huérfanos.", 'info');
+        let b = writeBatch(db), n = 0;
+        for (const d of aEliminar) { b.delete(d.ref); n++; if (n >= 400) { await b.commit(); b = writeBatch(db); n = 0; } }
+        if (n > 0) await b.commit();
+        toast(`${aEliminar.length} productos huérfanos eliminados.`, 'success');
     };
 
     function descargarBackup() {
@@ -609,16 +655,15 @@
         const invBackup     = Array.isArray(contenido.inventario) ? contenido.inventario : [];
         if (!comprasBackup.length && !ventasBackup.length && !invBackup.length) return toast("El backup no contiene datos.", 'error');
 
-        const [snapC, snapV, snapI] = await Promise.all([
-            getDocs(query(collection(db, "compras"),    where("uid", "==", userUID))),
-            getDocs(query(collection(db, "ventas"),     where("uid", "==", userUID))),
-            getDocs(query(collection(db, "inventario"), where("uid", "==", userUID)))
+        const [snapC, snapV] = await Promise.all([
+            getDocs(query(collection(db, "compras"), where("uid", "==", userUID))),
+            getDocs(query(collection(db, "ventas"),  where("uid", "==", userUID)))
         ]);
         const existC = new Set(snapC.docs.map(d => d.id));
         const existV = new Set(snapV.docs.map(d => d.id));
-        const existI = new Set(snapI.docs.map(d => d.id));
 
         let batch = writeBatch(db), ops = 0, ci = 0, vi = 0, ii = 0;
+        toast("Importando datos...", 'info');
         const flush = async () => { if (ops) { await batch.commit(); batch = writeBatch(db); ops = 0; } };
 
         for (const c of comprasBackup) {
@@ -634,13 +679,18 @@
             if (ops >= 400) await flush();
         }
         for (const inv of invBackup) {
-            if (!inv?.id || existI.has(inv.id)) continue;
-            batch.set(doc(db, "inventario", inv.id), { uid: userUID, loteId: inv.loteId||'', lote: inv.lote||'', nom: inv.nom||'Producto', asin: inv.asin||'', enlace: inv.enlace||'', coste: Number(inv.coste)||0, retail: Number(inv.retail)||0, lpn: inv.lpn||'', estado: inv.estado||'disponible', fecha: inv.fecha||new Date().toLocaleDateString() }, { merge: true });
-            existI.add(inv.id); ii++; ops++;
+            if (!inv?.id || existC.has(inv.id)) continue;
+            batch.set(doc(db, "compras", inv.id), { uid: userUID, tipo: 'producto', loteId: inv.loteId||'', lote: inv.lote||'', nom: inv.nom||'Producto', asin: inv.asin||'', enlace: inv.enlace||'', coste: Number(inv.coste)||0, retail: Number(inv.retail)||0, lpn: inv.lpn||'', estado: inv.estado||'disponible', fecha: inv.fecha||new Date().toLocaleDateString() }, { merge: true });
+            existC.add(inv.id); ii++; ops++;
             if (ops >= 400) await flush();
         }
-        await flush();
-        toast(`Restaurado: ${ci} lotes, ${vi} ventas, ${ii} productos en inventario.`, 'success');
+        try {
+            await flush();
+            toast(`Importado: ${ci} lotes, ${vi} ventas, ${ii} productos.`, 'success');
+        } catch(e) {
+            toast("Error al guardar: " + e.message, 'error');
+            console.error("Restaurar error:", e);
+        }
     }
 
     // ── FISCAL ──
@@ -917,6 +967,33 @@
     };
 
     // ── INVENTARIO ──
+    window.toggleAddInv = () => {
+        const form = document.getElementById('form-add-inv');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    };
+
+    window.guardarProductoInv = async () => {
+        const nom = document.getElementById('inv-add-nom').value.trim();
+        if (!nom) return toast("Escribe el nombre del producto.", 'error');
+        const enlace = document.getElementById('inv-add-enlace').value.trim();
+        const asinMatch = enlace.match(/dp\/([A-Z0-9]{10})/i);
+        const asin = asinMatch ? asinMatch[1] : '';
+        const coste = parseFloat(document.getElementById('inv-add-cos').value) || 0;
+        const retail = parseFloat(document.getElementById('inv-add-retail').value) || 0;
+        const loteId = document.getElementById('inv-add-lote').value || '';
+        const lote = loteId ? (dataLocal.compras.find(c => c.id === loteId)?.nom || '') : '';
+        const lpn = document.getElementById('inv-add-lpn').value.trim();
+        await addDoc(collection(db, "compras"), {
+            uid: userUID, tipo: 'producto', nom, enlace, asin,
+            coste, retail, lpn, loteId, lote,
+            estado: 'disponible', fecha: new Date().toLocaleDateString('es-ES')
+        });
+        ['inv-add-nom','inv-add-enlace','inv-add-cos','inv-add-retail','inv-add-lpn'].forEach(id => { document.getElementById(id).value = ''; });
+        document.getElementById('inv-add-lote').value = '';
+        document.getElementById('form-add-inv').style.display = 'none';
+        toast("Producto añadido al inventario.", 'success');
+    };
+
     window.filtrarInv = (f) => {
         invFiltro = f;
         document.querySelectorAll('.inv-filter-btn').forEach(b => b.classList.remove('active'));
@@ -951,6 +1028,13 @@
         const vend = total - disp;
         const el = document.getElementById('inv-count-badge');
         if (el) el.textContent = `${disp} disponibles · ${vend} vendidos`;
+        // Actualizar selector de lotes del formulario manual
+        const selLote = document.getElementById('inv-add-lote');
+        if (selLote) {
+            const val = selLote.value;
+            selLote.innerHTML = '<option value="">Sin lote</option>' + dataLocal.compras.map(c => `<option value="${c.id}">${c.nom}</option>`).join('');
+            selLote.value = val;
+        }
         const stats = document.getElementById('inv-stats');
         if (stats) stats.textContent = `Mostrando ${items.length} de ${total} productos`;
 
