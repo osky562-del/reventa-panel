@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VRIXO | Panel</title>
+
+    <!-- ===== PWA / Icono para pantalla de inicio (movil) ===== -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0e1a">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VRIXO">
+    <meta name="mobile-web-app-capable" content="yes">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -259,6 +270,23 @@
         .row-venta { transition: all .15s; }
         .row-venta.hidden { display: none; }
 
+        /* ── TABS / SECCIONES ── */
+        .tabs { display:flex; gap:6px; margin-bottom:24px; background:var(--bg-card); padding:6px; border-radius:var(--radius);
+            border:1px solid var(--border); box-shadow:var(--shadow-sm); flex-wrap:wrap; position:sticky; top:64px; z-index:50; }
+        .tab-btn { flex:1; min-width:110px; padding:12px 14px; border:none; background:transparent; border-radius:var(--radius-sm);
+            font-family:inherit; font-weight:700; font-size:0.85rem; color:var(--muted); cursor:pointer; transition:all var(--transition);
+            display:flex; align-items:center; justify-content:center; gap:7px; }
+        .tab-btn:hover { background:var(--bg); color:var(--primary); }
+        .tab-btn.active { background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; box-shadow:0 4px 12px var(--primary-glow); }
+        .tab-section { display:none; }
+        .tab-section.active { display:block; animation:fadeTab .25s cubic-bezier(.4,0,.2,1); }
+        @keyframes fadeTab { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ── BOTON QUITAR (inventario) ── */
+        .btn-quitar { background:#fff; color:var(--danger); border:1.5px solid #fecaca; padding:5px 12px; border-radius:8px;
+            font-size:0.75rem; font-weight:700; cursor:pointer; transition:all var(--transition); font-family:inherit; white-space:nowrap; }
+        .btn-quitar:hover { background:var(--danger); color:#fff; border-color:var(--danger); transform:translateY(-1px); box-shadow:0 4px 12px rgba(239,68,68,0.3); }
+
         /* ── FOOTER ── */
         .footer { text-align: center; padding: 24px 16px 32px; }
         .footer-inner { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: #b0b8c8;
@@ -334,6 +362,16 @@
 
     <div class="main">
 
+        <!-- ===== NAVEGACION POR PESTANAS ===== -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="registrar"   onclick="mostrarTab('registrar')">&#x1F4E6; Registrar</button>
+            <button class="tab-btn"        data-tab="inventario"  onclick="mostrarTab('inventario')">&#x1F4CB; Inventario</button>
+            <button class="tab-btn"        data-tab="movimientos" onclick="mostrarTab('movimientos')">&#x1F4CA; Movimientos</button>
+            <button class="tab-btn"        data-tab="fiscal"      onclick="mostrarTab('fiscal')">&#x1F9FE; Fiscal</button>
+        </nav>
+
+        <!-- ===== TAB: REGISTRAR ===== -->
+        <div class="tab-section active" id="tab-registrar">
         <!-- FORMULARIOS -->
         <div class="forms-grid">
             <div class="card">
@@ -358,6 +396,10 @@
             </div>
         </div>
 
+        </div><!-- /tab-registrar -->
+
+        <!-- ===== TAB: INVENTARIO ===== -->
+        <div class="tab-section" id="tab-inventario">
         <!-- INVENTARIO -->
         <div class="card" style="margin-bottom:24px" id="card-inventario">
             <div class="card-title"><span class="icon" style="background:linear-gradient(135deg,#e0f2fe,#bae6fd)">&#x1F4CB;</span> Inventario de Stock <span id="inv-count-badge" style="margin-left:auto;font-size:0.72rem;font-weight:600;color:var(--muted);background:var(--bg);padding:3px 10px;border-radius:20px;border:1px solid var(--border-light)">0 productos</span></div>
@@ -402,9 +444,14 @@
             </div>
         </div>
 
+        </div><!-- /tab-inventario -->
+
+        <!-- ===== TAB: FISCAL ===== -->
+        <div class="tab-section" id="tab-fiscal">
         <!-- FISCAL -->
         <div class="card card-fiscal">
             <div class="card-title"><span class="icon icon-fiscal">&#x1F9FE;</span> Exportacion Fiscal</div>
+            <div style="font-size:0.78rem;color:var(--muted);margin:-6px 0 14px;line-height:1.5">Solo se incluyen ventas de <strong style="color:#047857">Wallapop</strong> y <strong style="color:#1d4ed8">Vinted</strong>. Las ventas <strong style="color:#c2410c">en persona</strong> no aparecen en la exportaci&oacute;n fiscal.</div>
             <div class="fiscal-row">
                 <div class="form-field"><label>Desde</label><input type="date" id="f-desde"></div>
                 <div class="form-field"><label>Hasta</label><input type="date" id="f-hasta"></div>
@@ -421,6 +468,10 @@
             <div id="fiscal-info" class="fiscal-summary">Sin datos para exportar.</div>
         </div>
 
+        </div><!-- /tab-fiscal -->
+
+        <!-- ===== TAB: MOVIMIENTOS ===== -->
+        <div class="tab-section" id="tab-movimientos">
         <!-- TABLA -->
         <div class="table-wrap">
             <div class="table-header">
@@ -444,6 +495,8 @@
                 </table>
             </div>
         </div>
+
+        </div><!-- /tab-movimientos -->
 
         <div class="footer">
             <div class="footer-inner">by <strong>OSKY</strong></div>
@@ -489,6 +542,13 @@
             setTimeout(() => el.remove(), 300);
         }, 3000);
     }
+
+    // ── TABS / SECCIONES ──
+    window.mostrarTab = (name) => {
+        document.querySelectorAll('.tab-section').forEach(s => s.classList.toggle('active', s.id === 'tab-' + name));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     // ── AUTH ──
     document.getElementById('btn-entrar').addEventListener('click', () => {
@@ -739,11 +799,15 @@
         const a = Object.assign(document.createElement("a"), { href: url, download: nombre });
         document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
+    // Solo cuentan para la exportacion fiscal las ventas online (Wallapop / Vinted).
+    // Las ventas "en persona" quedan excluidas de todos los informes fiscales.
+    const esVentaFiscal = (v) => (v?.canal || '') !== 'persona';
+
     function getMovsFiltrados(r) {
         if (!r) r = getRango();
         return [
             ...dataLocal.compras.map(c => ({ fecha:c.fecha||"", fechaObj:parseFecha(c.fecha), tipo:"COMPRA", concepto:c.nom||"", id:c.id, vinculo:"", importe:-Math.abs(Number(c.total)||0) })),
-            ...dataLocal.ventas.map(v  => ({ fecha:v.fecha||"",  fechaObj:parseFecha(v.fecha),  tipo:"VENTA",  concepto:v.nom||"", id:v.id, vinculo:v.vin||"suelto", canal:v.canal||"", estado:v.estado||"", importe:Math.abs(Number(v.pre)||0) }))
+            ...dataLocal.ventas.filter(esVentaFiscal).map(v  => ({ fecha:v.fecha||"",  fechaObj:parseFecha(v.fecha),  tipo:"VENTA",  concepto:v.nom||"", id:v.id, vinculo:v.vin||"suelto", canal:v.canal||"", estado:v.estado||"", importe:Math.abs(Number(v.pre)||0) }))
         ].filter(m => inRango(m.fechaObj, r)).sort((a,b) => (a.fechaObj?.getTime()||0)-(b.fechaObj?.getTime()||0));
     }
     function actualizarResumenFiscal() {
@@ -772,7 +836,7 @@
         if (!userUID) return toast("Inicia sesión.", 'error');
         const r = getRango();
         const filas = dataLocal.compras.filter(c=>inRango(parseFecha(c.fecha),r)).map(c => {
-            const rec = dataLocal.ventas.filter(v=>v.vin===c.id).reduce((s,x)=>s+(Number(x.pre)||0),0);
+            const rec = dataLocal.ventas.filter(v=>v.vin===c.id && esVentaFiscal(v)).reduce((s,x)=>s+(Number(x.pre)||0),0);
             return [c.fecha||"",c.id,c.nom||"",fmt(c.total),fmt(rec),fmt(rec-c.total)];
         });
         if (!filas.length) return toast("No hay compras en ese rango.", 'error');
@@ -782,7 +846,7 @@
     function exportarVentasCSV() {
         if (!userUID) return toast("Inicia sesión.", 'error');
         const r = getRango();
-        const filas = dataLocal.ventas.filter(v=>inRango(parseFecha(v.fecha),r)).map(v=>[v.fecha||"",v.id,v.nom||"",fmt(v.pre),fmt(v.cos||0),fmt(v.pre-(Number(v.cos)||0)),v.vin||"suelto",v.canal||"",v.estado||""]);
+        const filas = dataLocal.ventas.filter(v=>esVentaFiscal(v) && inRango(parseFecha(v.fecha),r)).map(v=>[v.fecha||"",v.id,v.nom||"",fmt(v.pre),fmt(v.cos||0),fmt(v.pre-(Number(v.cos)||0)),v.vin||"suelto",v.canal||"",v.estado||""]);
         if (!filas.length) return toast("No hay ventas en ese rango.", 'error');
         descargarCSV("vrixo-ventas.csv", ["fecha","id","articulo","precio_venta","coste_unitario","beneficio","vinculo_lote","canal","estado"], filas);
         toast("CSV descargado.", 'success');
@@ -855,7 +919,7 @@
             d.text('Lotes y ventas vinculadas', 14, 72);
             const bodyLotes = [];
             comprasFiltradas.forEach(c => {
-                const hijas = dataLocal.ventas.filter(v => v.vin === c.id);
+                const hijas = dataLocal.ventas.filter(v => v.vin === c.id && esVentaFiscal(v));
                 const rec = hijas.reduce((s,x)=>s+(Number(x.pre)||0), 0);
                 const margen = rec - c.total;
                 bodyLotes.push([
@@ -884,7 +948,7 @@
             });
         }
 
-        const sueltasPDF = dataLocal.ventas.filter(v => v.vin==='suelto' && inRango(parseFecha(v.fecha), r));
+        const sueltasPDF = dataLocal.ventas.filter(v => v.vin==='suelto' && esVentaFiscal(v) && inRango(parseFecha(v.fecha), r));
         if (sueltasPDF.length) {
             const y = d.lastAutoTable ? d.lastAutoTable.finalY + 8 : 72;
             d.setFont('helvetica', 'bold');
@@ -917,7 +981,7 @@
         if (!userUID) return toast("Inicia sesión.", 'error');
         const r = getRango();
         const compras = dataLocal.compras.filter(c=>inRango(parseFecha(c.fecha),r));
-        const ventas  = dataLocal.ventas.filter(v=>inRango(parseFecha(v.fecha),r));
+        const ventas  = dataLocal.ventas.filter(v=>esVentaFiscal(v) && inRango(parseFecha(v.fecha),r));
         const res = { compras: compras.reduce((s,x)=>s+(Number(x.total)||0),0), ventas: ventas.reduce((s,x)=>s+(Number(x.pre)||0),0) };
         const payload = { version:1, uid:userUID, generadoEn:new Date().toISOString(), rango:{desde:r.desdeStr,hasta:r.hastaStr}, resumen:{...res,neto:res.ventas-res.compras}, compras, ventas };
         descargarBlob(JSON.stringify(payload,null,2), `vrixo-fiscal-${r.desdeStr||"inicio"}-${r.hastaStr||"fin"}.json`, "application/json");
@@ -1004,6 +1068,7 @@
     window.prepVenta = (id) => {
         const item = dataLocal.inventario.find(i => i.id === id);
         if (!item) return;
+        if (window.mostrarTab) window.mostrarTab('registrar');
         document.getElementById('v-nom').value = item.nom ? item.nom.substring(0, 80) : '';
         document.getElementById('v-cos').value = item.coste || 0;
         const sel = document.getElementById('v-vin');
@@ -1061,10 +1126,23 @@
                 <td class="inv-td amount-neg">−${(item.coste||0).toFixed(2)}€</td>
                 <td class="inv-td" style="color:var(--muted)">${(item.retail||0).toFixed(2)}€</td>
                 <td class="inv-td">${estadoBadge}</td>
-                <td class="inv-td" style="text-align:right"><button class="btn-vender" onclick="prepVenta('${item.id}')" ${vendido ? 'disabled' : ''}>${vendido ? 'Vendido' : 'Vender →'}</button></td>
+                <td class="inv-td" style="text-align:right;display:flex;gap:6px;justify-content:flex-end;align-items:center">
+                    <button class="btn-vender" onclick="prepVenta('${item.id}')" ${vendido ? 'disabled' : ''}>${vendido ? 'Vendido' : 'Vender →'}</button>
+                    <button class="btn-quitar" onclick="borrarProductoInv('${item.id}')" title="Quitar del inventario sin venderlo">Quitar</button>
+                </td>
             </tr>`;
         }).join('');
     }
+
+    window.borrarProductoInv = async (id) => {
+        if (!confirm('¿Quitar este producto del inventario? No se registrará como venta.')) return;
+        try {
+            await deleteDoc(doc(db, 'compras', id));
+            toast('Producto quitado del inventario.', 'success');
+        } catch (e) {
+            toast('Error al quitar: ' + e.message, 'error');
+        }
+    };
 
     window.toggleLote = (id) => {
         const icon = document.querySelector(`.toggle-icon[data-id="${id}"]`);

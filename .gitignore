@@ -1,0 +1,18 @@
+# Tooling local de Claude
+.claude/
+
+# Backups y archivos temporales
+index_backup_*.html
+_*.html
+_*.txt
+_*.py
+_*.mjs
+*.bak
+
+# Datos privados y herramientas (NO subir a repo publico)
+vrixo-lotes-completo*.json
+bookmarklet-*
+
+# Codigo antiguo no usado por la app actual
+app.js
+style.css
